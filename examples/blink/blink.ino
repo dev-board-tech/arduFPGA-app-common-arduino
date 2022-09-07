@@ -1,3 +1,5 @@
+#include <arduFPGA-common.h>
+
 #include <SPI.h>
 
 #define SSD1306_CS_PIN						28
