@@ -74,7 +74,7 @@ void logo_idle(logo_t *logoInst, struct box_s *box, int16_t x_pos ,int16_t y_pos
 #if __AVR_MEGA__
 	for (int16_t y = 0; y < (int16_t)pgm_read_byte(&logoInst->logo[1]); y++) {
 		for (int16_t x = 0; x < (int16_t)pgm_read_byte(&logoInst->logo[0]); x++) {
-			defaultScreen->DrvDrawPixel(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
+			defaultScreen->drvDrawPixelBox(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
 			//DISPLAY_FUNC_DRAW_PIXEL(inst, box, buf, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
 		}
 	}
