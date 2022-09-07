@@ -1,4 +1,5 @@
-#include <arduFPGA-common.h>
+#include <arduFPGA-app-common-arduino.h>
+
 
 #include <SPI.h>
 
