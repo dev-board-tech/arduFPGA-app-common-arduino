@@ -1,0 +1,811 @@
+/*
+ * SSD1306 SPI driver.
+ *
+ * Copyright (C) 2020  Iulian Gheorghiu (morgoth@devboard.tech)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#include "Arduino.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <avr/pgmspace.h>
+#include <string.h>
+#include <SPI.h>
+#include "../include/global.h"
+#include "ssd1306_spi.h"
+#include "../dev/screen.h"
+
+
+#ifndef SSD1306_USE_NO_BUF
+#if __AVR_MEGA__
+#include <avr/pgmspace.h>
+static const unsigned char SSD1306_BIT_MASK_TABLE [] PROGMEM = {
+	0b00000001,
+	0b00000010,
+	0b00000100,
+	0b00001000,
+	0b00010000,
+	0b00100000,
+	0b01000000,
+	0b10000000
+};
+#endif // __AVR_MEGA__
+#endif // SSD1306_USE_BUF
+
+uint8_t CsPin;
+uint8_t DcPin;
+uint8_t RstPin;
+uint8_t Busy;
+SPIClass *spi;
+
+static inline void SPI_SSD1306_CS_ASSERT(uint8_t CsPin) {
+	digitalWrite(CsPin, LOW);
+}
+
+static inline void SPI_SSD1306_CS_DEASSERT(uint8_t CsPin) {
+	digitalWrite(CsPin, HIGH);
+}
+
+static inline void SPI_SSD1306_COMMAND(uint8_t DcPin) {
+	digitalWrite(DcPin, LOW);
+}
+
+static inline void SPI_SSD1306_DATA(uint8_t DcPin) {
+	digitalWrite(DcPin, HIGH);
+}
+
+ssd1306_spi::ssd1306_spi(SPIClass *Spi, int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+#ifndef SSD1306_USE_NO_BUF
+#ifndef SSD1306_BUF_SIZE_BYTES
+	setBuf(malloc(bufSize));
+#endif // SSD1306_BUF_SIZE_BYTES
+#endif // SSD1306_USE_BUF
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = Spi;
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+
+ssd1306_spi::ssd1306_spi(int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+#ifndef SSD1306_USE_NO_BUF
+#ifndef SSD1306_BUF_SIZE_BYTES
+	setBuf(malloc(bufSize));
+#endif // SSD1306_BUF_SIZE_BYTES
+#endif // SSD1306_USE_BUF
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = &SPI;
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+
+ssd1306_spi::ssd1306_spi(SPIClass *Spi, uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+#ifndef SSD1306_USE_NO_BUF
+#ifndef SSD1306_BUF_SIZE_BYTES
+	setBuf(malloc(1024));
+#endif // SSD1306_BUF_SIZE_BYTES
+#endif // SSD1306_USE_BUF
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = Spi;
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+
+
+ssd1306_spi::ssd1306_spi(uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+#ifndef SSD1306_USE_NO_BUF
+#ifndef SSD1306_BUF_SIZE_BYTES
+	setBuf(malloc(1024));
+#endif // SSD1306_BUF_SIZE_BYTES
+#endif // SSD1306_USE_BUF
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = &SPI;
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+
+
+#ifndef SSD1306_USE_NO_BUF
+ssd1306_spi::ssd1306_spi(SPIClass *Spi, void *vBuf, uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = Spi;
+	setBuf(vBuf);
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+ssd1306_spi::ssd1306_spi(void *vBuf, uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
+	memset(this, 0, sizeof(this));
+	CsPin = csPin;
+	DcPin = dcPin;
+	RstPin = rstPin;
+	spi = &SPI;
+	setBuf(vBuf);
+	digitalWrite(csPin, HIGH);
+	digitalWrite(dcPin, HIGH);
+	digitalWrite(rstPin, HIGH);
+	pinMode(csPin, OUTPUT);
+	pinMode(dcPin, OUTPUT);
+	pinMode(rstPin, OUTPUT);
+	setDefault();
+	deriverInit();
+}
+#endif
+
+ssd1306_spi::~ssd1306_spi() {
+	//DrvClear(false);
+	//DrvRefresh();
+#ifndef SSD1306_USE_NO_BUF
+#ifndef SSD1306_BUF_SIZE_BYTES
+	if(getBuf())
+		free(getBuf());
+#endif // SSD1306_BUF_SIZE_BYTES
+#endif // SSD1306_USE_BUF
+	remove();
+}
+
+void ssd1306_spi::deriverInit() {
+	DriverPtr = this;
+	IdlePtr = &ssd1306_spi::Idle;
+	TriggerRefreshPtr = &ssd1306_spi::TriggerRefresh;
+	InitPtr = &ssd1306_spi::Init;
+	GetXPtr = &ssd1306_spi::GetX;
+	GetYPtr = &ssd1306_spi::GetY;
+	DrvRefreshPtr = &ssd1306_spi::DrvRefresh;
+	DrvOnPtr = &ssd1306_spi::DrvOn;
+	DrvSetContrastPtr = &ssd1306_spi::DrvSetContrast;
+	DrvDrawPixelPtr = &ssd1306_spi::DrvDrawPixel;
+	DrvDrawPixelBoxPtr = &ssd1306_spi::DrvDrawPixelBox;
+	DrvDrawRectanglePtr = &ssd1306_spi::DrvDrawRectangle;
+	DrvDrawRectangleBoxPtr = &ssd1306_spi::DrvDrawRectangleBox;
+	DrvDrawHLinePtr = &ssd1306_spi::DrvDrawHLine;
+	DrvDrawHLineBoxPtr = &ssd1306_spi::DrvDrawHLineBox;
+	DrvDrawVLinePtr = &ssd1306_spi::DrvDrawVLine;
+	DrvDrawVLineBoxPtr = &ssd1306_spi::DrvDrawVLineBox;
+	DrvClearPtr = &ssd1306_spi::DrvClear;
+	DrvDrawStringPtr = &ssd1306_spi::DrvDrawString;
+	DrvDrawStringBoxPtr = &ssd1306_spi::DrvDrawStringBox;
+}
+
+void ssd1306_spi::Idle(void *driverHandlerPtr) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+}
+
+void ssd1306_spi::TriggerRefresh(void *driverHandlerPtr) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::Init(void *driverHandlerPtr) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	digitalWrite(drv->RstPin, LOW);
+	delay(2);
+	digitalWrite(drv->RstPin, HIGH);
+	delay(10);
+
+	drv->WrCmd(SSD1306_DISPLAYOFF);
+	drv->WrCmd(SSD1306_SETDISPLAYCLOCKDIV);
+	drv->WrCmd(0xF0);
+	drv->WrCmd(SSD1306_CHARGEPUMP);
+	drv->WrCmd(0x14);
+	drv->WrCmd(SSD1306_SEGREMAP | 0x1);
+	drv->WrCmd(SSD1306_COMSCANDEC);
+	drv->WrCmd(SSD1306_SETCONTRAST);
+	drv->WrCmd(0x8F);
+	drv->WrCmd(SSD1306_SETPRECHARGE);
+	drv->WrCmd(0xF1);
+	drv->WrCmd(SSD1306_MEMORYMODE);
+	drv->WrCmd(0x00);
+	
+	delay(2);
+	drv->WrCmd(SSD1306_DISPLAYON);
+	delay(2);
+	DrvClear(driverHandlerPtr, false);
+	DrvRefresh(driverHandlerPtr);
+	return (Screen *)driverHandlerPtr;
+}
+
+void ssd1306_spi::WrCmd(byte cmd) {
+	SPI_SSD1306_COMMAND(DcPin);
+	SPI_SSD1306_CS_ASSERT(CsPin);
+	spi->transfer(cmd);
+}
+
+void ssd1306_spi::WrData(byte data) {
+
+}
+
+int ssd1306_spi::GetX(void *driverHandlerPtr) {
+	return 128;
+}
+
+int ssd1306_spi::GetY(void *driverHandlerPtr) {
+	return 64;
+}
+
+Screen *ssd1306_spi::DrvRefresh(void *driverHandlerPtr) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	/* Set start line */
+	//WrCmd(0x40);
+
+#ifndef SSD1306_USE_NO_BUF
+	SPI_SSD1306_CS_ASSERT(drv->CsPin);
+	drv->WrCmd(0x21);
+	drv->WrCmd(0x00);
+	drv->WrCmd(0x7F);
+	drv->WrCmd(0x22);
+	drv->WrCmd(0x00);
+	drv->WrCmd(0x07);
+	SPI_SSD1306_DATA(drv->DcPin);
+	drv->spi->transfer(drv->buf, 1024);
+	SPI_SSD1306_CS_DEASSERT(drv->CsPin);
+#endif // SSD1306_USE_BUF
+	DrvOn(driverHandlerPtr, true);
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvOn(void *driverHandlerPtr, bool state) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	drv->WrCmd(state ? 0xAF : 0xAE);
+	SPI_SSD1306_CS_DEASSERT(drv->CsPin);
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvSetContrast(void *driverHandlerPtr, byte cont) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	drv->WrCmd(0x81);
+	drv->WrCmd(cont);
+	SPI_SSD1306_CS_DEASSERT(drv->CsPin);
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvDrawPixel(void *driverHandlerPtr, int x, int y, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	DrvDrawPixelBox(driverHandlerPtr, drv->box, x, y, color);
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+#ifndef SSD1306_USE_NO_BUF
+	/* Check if outside the display */
+	if(x < 0 || y < 0 || y > 63)
+		return (Screen *)driverHandlerPtr;
+	/* Check if outside the window */
+	if(box) {
+		if(x < box->x_min ||
+			x >= box->x_max ||
+				y < box->y_min ||
+					y >= box->y_max)
+			return (Screen *)driverHandlerPtr;
+	}
+	/* Calculate the byte where the bit will be written. */
+	unsigned char *tmp_buff = drv->buf + (((y >> 3) * 128) + x);
+	/* Create the mask of the bit that will be edited inside the selected byte. */
+	byte mask;
+#if __AVR_MEGA__
+		mask = pgm_read_byte(&SSD1306_BIT_MASK_TABLE[y & 0x07]);
+#else // !__AVR_MEGA__
+		mask = 1 << (y & 0x07);
+#endif // __AVR_MEGA__
+	if (drv->reverseColor ^ (color ? 1 : 0))
+		*tmp_buff |= mask;
+	else
+		*tmp_buff &= ~mask;
+#endif // SSD1306_USE_BUF
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvDrawRectangle(void *driverHandlerPtr, int x, int y, int x_size, int y_size, bool fill, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	return DrvDrawRectangleBox(driverHandlerPtr, drv->box, x, y, x_size, y_size, fill, color);
+}
+
+Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	box_s box__;
+	if(box) {
+		box__.x_min = box->x_min;
+		box__.x_max = box->x_max;
+		box__.y_min = box->y_min;
+		box__.y_max = box->y_max;
+	} else {
+		box__.x_min = 0;
+		box__.x_max = 128;
+		box__.y_min = 0;
+		box__.y_max = 64;
+	}
+	int x_end = x + x_size ,y_end = y + y_size;
+	if(x >= box__.x_max ||
+		y >= box__.y_max ||
+			x_end < box__.x_min ||
+				y_end < box__.y_min)
+		return (Screen *)driverHandlerPtr;
+	register int LineCnt = y;
+	if(fill) {
+		if(LineCnt < box__.y_min)
+			LineCnt = box__.y_min;
+		int _x_start = x;
+		if(_x_start < box__.x_min)
+			_x_start = box__.x_min;
+		int _x_end = x_end;
+		if(_x_end > box__.x_max)
+			_x_end = box__.x_max;
+		int width_to_refresh = (_x_end - _x_start);
+		if((width_to_refresh + _x_start) > box__.x_max)
+			width_to_refresh = (box__.x_max - _x_start);
+#ifndef SSD1306_USE_NO_BUF
+		for( ; LineCnt < y_end; LineCnt++) {
+			if(LineCnt >= box__.y_max)
+				return (Screen *)driverHandlerPtr;
+			register int x = _x_start;
+			for( ; x < _x_end ; x++) {
+				DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+			}
+		}
+#else // !SSD1306_USE_BUF
+		for( ; LineCnt < y_end; LineCnt+=8) {
+			if(LineCnt >= box__.y_max)
+				return (Screen *)driverHandlerPtr;
+			register int x = _x_start;
+			for( ; x < _x_end ; x++) {
+				WrCmd(0x21);
+				WrCmd(x);
+				WrCmd(x);
+				WrCmd(0x22);
+				WrCmd(LineCnt >> 3);
+				WrCmd(LineCnt >> 3);
+				SPI_SSD1306_DATA();
+				spi->transfer((reverseColor ^ (color ? 1 : 0)) ? 0xFF : 0x00);
+				SPI_SSD1306_CS_DEASSERT();
+			}
+		}
+#endif // SSD1306_USE_BUF
+		return (Screen *)driverHandlerPtr;
+	}
+#ifndef SSD1306_USE_NO_BUF
+	int _x_end = x_end;
+	int _x_start = x;
+	if(_x_end > box__.x_max) 
+		_x_end = box__.x_max;
+	if(_x_start < box__.x_min) 
+		_x_start = box__.x_min;
+	if(y >= box__.y_min) {
+		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
+			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y, color);
+		}
+	}
+
+	if(y_end <= box__.y_max) {
+		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
+			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y_end - 1, color);
+		}
+	}
+
+	int _y_end = y_end;
+	if(_y_end > box__.y_max) 
+		_y_end = box__.y_max;
+	int _y_start = y;
+	if(_y_start < box__.y_min) 
+		_y_start = box__.y_min;
+	if(x >= box__.x_min) {
+		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
+			DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+		}
+	}
+
+	if(x_end <= box__.x_max) {
+		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
+			DrvDrawPixelBox(driverHandlerPtr, &box__, (x_end - 1), LineCnt, color);
+		}
+	}
+#endif // SSD1306_USE_BUF
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvDrawHLine(void *driverHandlerPtr, int x1, int x2, int y, byte width, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	return DrvDrawHLineBox(driverHandlerPtr, drv->box, x1, x2, y, width, color);
+}
+
+Screen *ssd1306_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+#ifndef SSD1306_USE_NO_BUF
+	box_s box__;
+	if(box) {
+		box__.x_min = box->x_min;
+		box__.x_max = box->x_max;
+		box__.y_min = box->y_min;
+		box__.y_max = box->y_max;
+	} else {
+		box__.x_min = 0;
+		box__.x_max = 128;
+		box__.y_min = 0;
+		box__.y_max = 64;
+	}
+	int X1_Tmp = x1, X2_Tmp = x1 + x2;
+	if(X1_Tmp < (int)box__.x_min)
+		X1_Tmp = (int)box__.x_min;
+	if(X1_Tmp >= (int)box__.x_max)
+		X1_Tmp = (int)box__.x_max;
+	if(X2_Tmp < (int)box__.x_min)
+		X2_Tmp = (int)box__.x_min;
+	if(X2_Tmp >= (int)box__.x_max)
+		X2_Tmp = (int)box__.x_max;
+	if(y < (int)box__.y_min)
+		y = (int)box__.y_min;
+	if(y >= (int)box__.y_max)
+		y = (int)box__.y_max;
+	int Half_width1 = (width>>1);
+	int Half_width2 = width-Half_width1;
+	for(;X1_Tmp < X2_Tmp; X1_Tmp++) {
+		int _Y_ = y - Half_width1;
+		for(; _Y_ < y + Half_width2; _Y_++)
+			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(X1_Tmp), (int)(_Y_), color);
+	}
+#endif // SSD1306_USE_BUF
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvDrawVLine(void *driverHandlerPtr, int y1, int y2, int x, byte width, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	return DrvDrawVLineBox(driverHandlerPtr, drv->box, y1, y2, x, width, color);
+}
+
+Screen *ssd1306_spi::DrvDrawVLineBox(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+#ifndef SSD1306_USE_NO_BUF
+	box_s box__;
+	if(box) {
+		box__.x_min = box->x_min;
+		box__.x_max = box->x_max;
+		box__.y_min = box->y_min;
+		box__.y_max = box->y_max;
+	} else {
+		box__.x_min = 0;
+		box__.x_max = 128;
+		box__.y_min = 0;
+		box__.y_max = 64;
+	}
+	int Y1_Tmp = y1, Y2_Tmp = y1 + y2;
+	if(x < (int)box__.x_min)
+		x = (int)box__.x_min;
+	if(x >= (int)box__.x_max)
+		x = (int)box__.x_max;
+	if(Y1_Tmp < (int)box__.y_min)
+		Y1_Tmp = (int)box__.y_min;
+	if(Y1_Tmp >= (int)box__.y_max)
+		Y1_Tmp = (int)box__.y_max;
+	if(Y2_Tmp < (int)box__.y_min)
+		Y2_Tmp = (int)box__.y_min;
+	if(Y2_Tmp >= (int)box__.y_max)
+		Y2_Tmp = (int)box__.y_max;
+	int Half_width1 = (width>>1);
+	int Half_width2 = width-Half_width1;
+	for(;Y1_Tmp < Y2_Tmp; Y1_Tmp++) {
+		int _X_ = x - Half_width1;
+		for(; _X_ < x + Half_width2; _X_++)
+			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(_X_), (int)(Y1_Tmp), color);
+	}
+#endif // SSD1306_USE_BUF
+	return (Screen *)driverHandlerPtr;
+}
+
+Screen *ssd1306_spi::DrvClear(void *driverHandlerPtr, int color) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+	//byte *_buf = buf;
+#ifndef SSD1306_USE_NO_BUF
+	/*for(int cnt = 0; cnt < 1024; cnt++) {
+		*_buf++ = state ? 0xFF : 0x00;
+	}*/
+	memset(drv->buf, (drv->reverseColor ^ (color ? 1 : 0)) ? 0xFF : 0x00, 1024);
+#else // !SSD1306_USE_BUF
+	DrvDrawRectangle(NULL, 0, 0, 128, 64, 1, reverseColor ^ (color ? 1 : 0));
+#endif // SSD1306_USE_BUF
+	return (Screen *)driverHandlerPtr;
+}
+
+/*#####################################################*/
+#ifdef __AVR_MEGA__
+const byte CharTable6x8[] PROGMEM =
+#else
+const byte CharTable6x8[] =
+#endif
+{
+	6                          ,0          ,6          ,8          ,32            ,128,
+	/*  OffsetOfBeginingCharTable  ,0=Y-X|1=X-X,X-Dimension,Y-Dimension,BeginAsciiChar,EndAsciiChar*/
+	0x00,0x00,0x00,0x00,0x00,0x00,
+	0x5F,0x00,0x00,0x00,0x00,0x00,//   !		32,33
+	0x07,0x00,0x07,0x00,0x00,0x00,
+	0x14,0x7F,0x14,0x7F,0x14,0x00,// " #		34,35
+	0x24,0x2A,0x7F,0x2A,0x12,0x00,
+	0x23,0x13,0x08,0x64,0x62,0x00,// 0x %		36,37
+	0x36,0x49,0x55,0x22,0x50,0x00,
+	0x05,0x03,0x00,0x00,0x00,0x00,// & '		38,39
+	0x1C,0x22,0x41,0x00,0x00,0x00,
+	0x41,0x22,0x1C,0x00,0x00,0x00,// ( )		40,41
+	0x08,0x2A,0x1C,0x2A,0x08,0x00,
+	0x08,0x08,0x3E,0x08,0x08,0x00,// * +		42,43
+	0x50,0x30,0x00,0x00,0x00,0x00,
+	0x08,0x08,0x08,0x00,0x00,0x00,// , -		44,45
+	0x30,0x30,0x00,0x00,0x00,0x00,
+	0x20,0x10,0x08,0x04,0x02,0x00,// . /		46,47
+	0x3E,0x51,0x49,0x45,0x3E,0x00,
+	0x42,0x7F,0x40,0x00,0x00,0x00,// 0 1		48,49
+	0x42,0x61,0x51,0x49,0x46,0x00,
+	0x21,0x41,0x45,0x4B,0x31,0x00,// 2 3		50,51
+	0x18,0x14,0x12,0x7F,0x10,0x00,
+	0x27,0x45,0x45,0x45,0x39,0x00,// 4 5		52,53
+	0x3C,0x4A,0x49,0x49,0x30,0x00,
+	0x01,0x71,0x09,0x05,0x03,0x00,// 6 7		54,55
+	0x36,0x49,0x49,0x49,0x36,0x00,
+	0x06,0x49,0x49,0x29,0x1E,0x00,// 8 9		56,57
+	0x36,0x00,0x00,0x00,0x00,0x00,
+	0x56,0x36,0x00,0x00,0x00,0x00,// : ;		58,59
+	0x08,0x14,0x22,0x41,0x00,0x00,
+	0x14,0x14,0x14,0x00,0x00,0x00,// < =		60,61
+	0x41,0x22,0x14,0x08,0x00,0x00,
+	0x02,0x01,0x51,0x09,0x06,0x00,// > ?		62,63
+	0x32,0x49,0x79,0x41,0x3E,0x00,
+	0x7E,0x11,0x11,0x7E,0x00,0x00,// @ A		64,65
+	0x7F,0x49,0x49,0x36,0x00,0x00,
+	0x3E,0x41,0x41,0x22,0x00,0x00,// B C		66,67
+	0x7F,0x41,0x22,0x1C,0x00,0x00,
+	0x7F,0x49,0x49,0x41,0x00,0x00,// D E		68,69
+	0x7F,0x09,0x09,0x01,0x00,0x00,
+	0x3E,0x41,0x51,0x32,0x00,0x00,// F G		70,71
+	0x7F,0x08,0x08,0x7F,0x00,0x00,
+	0x41,0x7F,0x41,0x00,0x00,0x00,// H I		72,73
+	0x20,0x40,0x41,0x3F,0x01,0x00,
+	0x7F,0x08,0x14,0x22,0x41,0x00,// J K		74,75
+	0x7F,0x40,0x40,0x00,0x00,0x00,
+	0x7F,0x02,0x04,0x02,0x7F,0x00,// L M		76,77
+	0x7F,0x04,0x08,0x10,0x7F,0x00,
+	0x3E,0x41,0x41,0x3E,0x00,0x00,// N O		78,79
+	0x7F,0x09,0x09,0x06,0x00,0x00,
+	0x3E,0x41,0x51,0x21,0x5E,0x00,// P Q		80,81
+	0x7F,0x19,0x29,0x46,0x00,0x00,
+	0x46,0x49,0x49,0x31,0x00,0x00,// R S		82,83
+	0x01,0x7F,0x01,0x00,0x00,0x00,
+	0x3F,0x40,0x40,0x3F,0x00,0x00,// T U		84,85
+	0x1F,0x20,0x40,0x20,0x1F,0x00,
+	0x7F,0x20,0x18,0x20,0x7F,0x00,// V W		86,87
+	0x63,0x14,0x08,0x14,0x63,0x00,
+	0x03,0x04,0x78,0x04,0x03,0x00,// X Y		88,89
+	0x61,0x51,0x49,0x45,0x43,0x00,
+	0x7F,0x41,0x41,0x00,0x00,0x00,// Z [		90,91
+	0x02,0x04,0x08,0x10,0x20,0x00,
+	0x41,0x41,0x7F,0x00,0x00,0x00,// \ ]		92,93
+	0x04,0x02,0x01,0x02,0x04,0x00,
+	0x40,0x40,0x40,0x00,0x00,0x00,// ^ _		94,95
+	0x01,0x02,0x04,0x00,0x00,0x00,
+	0x20,0x54,0x54,0x78,0x00,0x00,// ` a		96,97
+	0x7F,0x48,0x44,0x38,0x00,0x00,
+	0x38,0x44,0x44,0x00,0x00,0x00,// b c		98,99
+	0x38,0x44,0x48,0x7F,0x00,0x00,
+	0x38,0x54,0x54,0x18,0x00,0x00,// d e		100,101
+	0x08,0x7E,0x09,0x01,0x00,0x00,
+	0x08,0x14,0x54,0x3C,0x00,0x00,// f g		102,103
+	0x7F,0x08,0x04,0x78,0x00,0x00,
+	0x44,0x7D,0x40,0x00,0x00,0x00,// h i		104,105
+	0x20,0x40,0x44,0x3D,0x00,0x00,
+	0x7F,0x10,0x28,0x44,0x00,0x00,// j k		106,107
+	0x41,0x7F,0x40,0x00,0x00,0x00,
+	0x7C,0x04,0x18,0x04,0x78,0x00,// l m		108,109
+	0x7C,0x08,0x04,0x78,0x00,0x00,
+	0x38,0x44,0x44,0x38,0x00,0x00,// n o		110,111
+	0x7C,0x14,0x14,0x08,0x00,0x00,
+	0x08,0x14,0x18,0x7C,0x00,0x00,// p q		112,113
+	0x7C,0x08,0x04,0x08,0x00,0x00,
+	0x48,0x54,0x54,0x20,0x00,0x00,// r s		114,115
+	0x04,0x3F,0x44,0x40,0x00,0x00,
+	0x3C,0x40,0x20,0x7C,0x00,0x00,// t u		116,117
+	0x1C,0x20,0x40,0x20,0x1C,0x00,
+	0x3C,0x40,0x30,0x40,0x3C,0x00,// v w		118,119
+	0x44,0x28,0x10,0x28,0x44,0x00,
+	0x0C,0x50,0x50,0x3C,0x00,0x00,// x y		120,121
+	0x44,0x64,0x54,0x4C,0x44,0x00,
+	0x08,0x36,0x41,0x00,0x00,0x00,// z {		122,123
+	0x7F,0x00,0x00,0x00,0x00,0x00,
+	0x41,0x36,0x08,0x00,0x00,0x00,// | }		124,125
+	0x08,0x2A,0x1C,0x08,0x00,0x00,
+	0x08,0x1C,0x2A,0x08,0x00,0x00,// -> <-		126,127
+	0x14,0x36,0x77,0x36,0x14,0x00 };//			128
+
+Screen *ssd1306_spi::DrvDrawString(void *driverHandlerPtr, char *string, int x, int y, int foreColor, int inkColor) {
+	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+  return DrvDrawStringBox(driverHandlerPtr, drv->box, string, x, y, drv->terminalMode, drv->wordWrap, foreColor, inkColor);
+}
+
+Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
+	box_s box__;
+	if(box) {
+		box__.x_min = box->x_min;
+		box__.x_max = box->x_max;
+		box__.y_min = box->y_min;
+		box__.y_max = box->y_max;
+	} else {
+		box__.x_min = 0;
+		box__.x_max = 128;
+		box__.y_min = 0;
+		box__.y_max = 64;
+	}
+	char *pcString = string;
+	bool WordWrap = wordWrap;
+	//s32 _SelStart = properties->_SelStart;
+	//s32 _SelLen = properties->_SelLen;
+
+	char chWidth = 0;
+	char chHeight = 0;
+	int CharPtr;
+	char Tmp = 0;
+	int Cursor_X = x;
+	int Cursor_Y = y;
+	bool ulVisible = true;
+	int CharCnt = 0;
+	bool ulOpaque = false;
+#ifdef __AVR_MEGA__
+	chWidth = pgm_read_byte(&CharTable6x8[2]);
+	chHeight = pgm_read_byte(&CharTable6x8[3]);
+#else // !__AVR_MEGA__
+	chWidth = CharTable6x8[2];
+	chHeight = CharTable6x8[3];
+#endif // __AVR_MEGA__
+	do {
+		char Char = *pcString;
+		if (Char == 0) {
+			return (Screen *)driverHandlerPtr;
+		}
+#ifdef __AVR_MEGA__
+		CharPtr = ((Char - pgm_read_byte(&CharTable6x8[4])) * chWidth) + pgm_read_byte(&CharTable6x8[0]);
+		if(Char < pgm_read_byte(&CharTable6x8[4]) || Char > pgm_read_byte(&CharTable6x8[5]))
+#else // !__AVR_MEGA__
+		CharPtr = ((Char - CharTable6x8[4]) * chWidth) + CharTable6x8[0];
+		if (Char < CharTable6x8[4] || Char > CharTable6x8[5])
+#endif // __AVR_MEGA__
+		{
+			//chWidth_Tmp = chWidth;
+			chWidth = 0;
+		} else {
+			char Temp;
+			/* if CompactWriting is true search the character for free cols from right to left and clear them */
+			if (!terminalMode) {
+				for (Tmp = 1; Tmp < chWidth; Tmp++) {
+#ifdef __AVR_MEGA__
+					Temp = pgm_read_byte(&CharTable6x8[Tmp + CharPtr]);
+#else
+					Temp = CharTable6x8[Tmp + CharPtr];
+#endif
+					if (Temp == 0)
+						break;
+				}
+				Tmp++;
+			}
+			else {
+				Tmp = chWidth;
+			}
+			if (Cursor_X + Tmp >= box__.x_min
+					&& Cursor_X < box__.x_max + Tmp
+					&& Cursor_Y + chHeight >= box__.y_min
+					&& Cursor_Y < box__.y_max + chHeight) {
+				if (ulVisible) {
+					int XX = 0;
+					int YY = 0;
+					for (XX = 0; XX < Tmp; XX++) {
+#ifdef __AVR_MEGA__
+						Temp = pgm_read_byte(&CharTable6x8[XX + CharPtr]);
+#else // !__AVR_MEGA__
+						Temp = CharTable6x8[XX + CharPtr];
+#endif // __AVR_MEGA__
+#ifndef SSD1306_USE_NO_BUF
+						for (YY = 0; YY < chHeight; YY++) {
+							if (Temp & 0x1)
+							{
+								DrvDrawPixelBox(driverHandlerPtr, &box__,
+									XX + Cursor_X, YY + Cursor_Y, inkColor);
+							}
+							else
+							{
+								if (ulOpaque)
+									DrvDrawPixelBox(driverHandlerPtr, &box__,
+										XX + Cursor_X, YY + Cursor_Y, foreColor);
+							}
+							Temp = Temp >> 1;
+						}
+#else // !SSD1306_USE_BUF
+						if(XX + Cursor_X < box__.x_max) {
+							SPI_SSD1306_CS_ASSERT();
+							WrCmd(0x21);
+							WrCmd(XX + Cursor_X);
+							WrCmd(XX + Cursor_X);
+							WrCmd(0x22);
+							WrCmd(Cursor_Y >> 3);
+							WrCmd(Cursor_Y >> 3);
+							SPI_SSD1306_DATA();
+							spi->transfer((reverseColor ^ (inkColor ? 1 : 0)) ? Temp : ~Temp);
+							SPI_SSD1306_CS_DEASSERT();
+						}
+#endif // SSD1306_USE_BUF
+					}
+				}
+			}
+		}
+		switch (Char) {
+		case '\r':
+			Cursor_X = x;
+			pcString++;
+			break;
+		case '\n':
+			Cursor_Y += chHeight;
+			pcString++;
+			break;
+		default:
+			Cursor_X += Tmp;
+			if ((Cursor_X + chWidth > box__.x_max)
+					&& WordWrap == true) {
+				Cursor_Y += chHeight;
+				Cursor_X = x;
+			}
+			pcString++;
+		}
+		CharCnt++;
+	} while (1);
+}
