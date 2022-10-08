@@ -24,12 +24,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <avr/pgmspace.h>
 #include <string.h>
 #include <SPI.h>
 #include "../include/global.h"
 #include "ssd1306_spi.h"
-#include "../dev/screen.h"
+#include "font6x8.h"
+#include "SPI.h"
 
 
 #ifndef SSD1306_USE_NO_BUF
@@ -207,6 +207,7 @@ void ssd1306_spi::deriverInit() {
 	DriverPtr = this;
 	IdlePtr = &ssd1306_spi::Idle;
 	TriggerRefreshPtr = &ssd1306_spi::TriggerRefresh;
+	TriggerUpdatePtr = &ssd1306_spi::TriggerUpdate;
 	InitPtr = &ssd1306_spi::Init;
 	GetXPtr = &ssd1306_spi::GetX;
 	GetYPtr = &ssd1306_spi::GetY;
@@ -214,16 +215,16 @@ void ssd1306_spi::deriverInit() {
 	DrvOnPtr = &ssd1306_spi::DrvOn;
 	DrvSetContrastPtr = &ssd1306_spi::DrvSetContrast;
 	DrvDrawPixelPtr = &ssd1306_spi::DrvDrawPixel;
-	DrvDrawPixelBoxPtr = &ssd1306_spi::DrvDrawPixelBox;
+	DrvDrawPixelClipPtr = &ssd1306_spi::DrvDrawPixelClip;
 	DrvDrawRectanglePtr = &ssd1306_spi::DrvDrawRectangle;
-	DrvDrawRectangleBoxPtr = &ssd1306_spi::DrvDrawRectangleBox;
+	DrvDrawRectangleClipPtr = &ssd1306_spi::DrvDrawRectangleClip;
 	DrvDrawHLinePtr = &ssd1306_spi::DrvDrawHLine;
-	DrvDrawHLineBoxPtr = &ssd1306_spi::DrvDrawHLineBox;
+	DrvDrawHLineClipPtr = &ssd1306_spi::DrvDrawHLineClip;
 	DrvDrawVLinePtr = &ssd1306_spi::DrvDrawVLine;
-	DrvDrawVLineBoxPtr = &ssd1306_spi::DrvDrawVLineBox;
+	DrvDrawVLineClipPtr = &ssd1306_spi::DrvDrawVLineClip;
 	DrvClearPtr = &ssd1306_spi::DrvClear;
 	DrvDrawStringPtr = &ssd1306_spi::DrvDrawString;
-	DrvDrawStringBoxPtr = &ssd1306_spi::DrvDrawStringBox;
+	DrvDrawStringClipPtr = &ssd1306_spi::DrvDrawStringClip;
 }
 
 void ssd1306_spi::Idle(void *driverHandlerPtr) {
@@ -232,6 +233,10 @@ void ssd1306_spi::Idle(void *driverHandlerPtr) {
 
 void ssd1306_spi::TriggerRefresh(void *driverHandlerPtr) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
+}
+
+void ssd1306_spi::TriggerUpdate(void *driverHandlerPtr) {
+	DrvRefresh(driverHandlerPtr);
 }
 
 Screen *ssd1306_spi::Init(void *driverHandlerPtr) {
@@ -270,7 +275,9 @@ void ssd1306_spi::WrCmd(byte cmd) {
 }
 
 void ssd1306_spi::WrData(byte data) {
-
+	SPI_SSD1306_DATA(DcPin);
+	SPI_SSD1306_CS_ASSERT(CsPin);
+	spi->transfer(data);
 }
 
 int ssd1306_spi::GetX(void *driverHandlerPtr) {
@@ -279,6 +286,12 @@ int ssd1306_spi::GetX(void *driverHandlerPtr) {
 
 int ssd1306_spi::GetY(void *driverHandlerPtr) {
 	return 64;
+}
+
+void transfer(ssd1306_spi *drv, int len) {
+	for( int i = 0; i < len; i++) {
+		drv->spi->transfer(drv->buf[i]);
+	}
 }
 
 Screen *ssd1306_spi::DrvRefresh(void *driverHandlerPtr) {
@@ -295,7 +308,8 @@ Screen *ssd1306_spi::DrvRefresh(void *driverHandlerPtr) {
 	drv->WrCmd(0x00);
 	drv->WrCmd(0x07);
 	SPI_SSD1306_DATA(drv->DcPin);
-	drv->spi->transfer(drv->buf, 1024);
+	//drv->spi->transfer(drv->buf, 1024);
+	transfer(drv, 1024);
 	SPI_SSD1306_CS_DEASSERT(drv->CsPin);
 #endif // SSD1306_USE_BUF
 	DrvOn(driverHandlerPtr, true);
@@ -319,11 +333,11 @@ Screen *ssd1306_spi::DrvSetContrast(void *driverHandlerPtr, byte cont) {
 
 Screen *ssd1306_spi::DrvDrawPixel(void *driverHandlerPtr, int x, int y, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
-	DrvDrawPixelBox(driverHandlerPtr, drv->box, x, y, color);
+	DrvDrawPixelClip(driverHandlerPtr, drv->box, x, y, color);
 	return (Screen *)driverHandlerPtr;
 }
 
-Screen *ssd1306_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
+Screen *ssd1306_spi::DrvDrawPixelClip(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
 #ifndef SSD1306_USE_NO_BUF
 	/* Check if outside the display */
@@ -356,10 +370,10 @@ Screen *ssd1306_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, 
 
 Screen *ssd1306_spi::DrvDrawRectangle(void *driverHandlerPtr, int x, int y, int x_size, int y_size, bool fill, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
-	return DrvDrawRectangleBox(driverHandlerPtr, drv->box, x, y, x_size, y_size, fill, color);
+	return DrvDrawRectangleClip(driverHandlerPtr, drv->box, x, y, x_size, y_size, fill, color);
 }
 
-Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
+Screen *ssd1306_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
 	box_s box__;
 	if(box) {
@@ -398,7 +412,7 @@ Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *b
 				return (Screen *)driverHandlerPtr;
 			register int x = _x_start;
 			for( ; x < _x_end ; x++) {
-				DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+				DrvDrawPixelClip(driverHandlerPtr, &box__, x, LineCnt, color);
 			}
 		}
 #else // !SSD1306_USE_BUF
@@ -430,13 +444,13 @@ Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *b
 		_x_start = box__.x_min;
 	if(y >= box__.y_min) {
 		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, LineCnt, y, color);
 		}
 	}
 
 	if(y_end <= box__.y_max) {
 		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y_end - 1, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, LineCnt, y_end - 1, color);
 		}
 	}
 
@@ -448,13 +462,13 @@ Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *b
 		_y_start = box__.y_min;
 	if(x >= box__.x_min) {
 		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, x, LineCnt, color);
 		}
 	}
 
 	if(x_end <= box__.x_max) {
 		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (x_end - 1), LineCnt, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (x_end - 1), LineCnt, color);
 		}
 	}
 #endif // SSD1306_USE_BUF
@@ -463,10 +477,10 @@ Screen *ssd1306_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *b
 
 Screen *ssd1306_spi::DrvDrawHLine(void *driverHandlerPtr, int x1, int x2, int y, byte width, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
-	return DrvDrawHLineBox(driverHandlerPtr, drv->box, x1, x2, y, width, color);
+	return DrvDrawHLineClip(driverHandlerPtr, drv->box, x1, x2, y, width, color);
 }
 
-Screen *ssd1306_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
+Screen *ssd1306_spi::DrvDrawHLineClip(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
 #ifndef SSD1306_USE_NO_BUF
 	box_s box__;
@@ -499,7 +513,7 @@ Screen *ssd1306_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, 
 	for(;X1_Tmp < X2_Tmp; X1_Tmp++) {
 		int _Y_ = y - Half_width1;
 		for(; _Y_ < y + Half_width2; _Y_++)
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(X1_Tmp), (int)(_Y_), color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (int)(X1_Tmp), (int)(_Y_), color);
 	}
 #endif // SSD1306_USE_BUF
 	return (Screen *)driverHandlerPtr;
@@ -507,10 +521,10 @@ Screen *ssd1306_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, 
 
 Screen *ssd1306_spi::DrvDrawVLine(void *driverHandlerPtr, int y1, int y2, int x, byte width, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
-	return DrvDrawVLineBox(driverHandlerPtr, drv->box, y1, y2, x, width, color);
+	return DrvDrawVLineClip(driverHandlerPtr, drv->box, y1, y2, x, width, color);
 }
 
-Screen *ssd1306_spi::DrvDrawVLineBox(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
+Screen *ssd1306_spi::DrvDrawVLineClip(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
 #ifndef SSD1306_USE_NO_BUF
 	box_s box__;
@@ -543,7 +557,7 @@ Screen *ssd1306_spi::DrvDrawVLineBox(void *driverHandlerPtr, struct box_s *box, 
 	for(;Y1_Tmp < Y2_Tmp; Y1_Tmp++) {
 		int _X_ = x - Half_width1;
 		for(; _X_ < x + Half_width2; _X_++)
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(_X_), (int)(Y1_Tmp), color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (int)(_X_), (int)(Y1_Tmp), color);
 	}
 #endif // SSD1306_USE_BUF
 	return (Screen *)driverHandlerPtr;
@@ -564,118 +578,13 @@ Screen *ssd1306_spi::DrvClear(void *driverHandlerPtr, int color) {
 }
 
 /*#####################################################*/
-#ifdef __AVR_MEGA__
-const byte CharTable6x8[] PROGMEM =
-#else
-const byte CharTable6x8[] =
-#endif
-{
-	6                          ,0          ,6          ,8          ,32            ,128,
-	/*  OffsetOfBeginingCharTable  ,0=Y-X|1=X-X,X-Dimension,Y-Dimension,BeginAsciiChar,EndAsciiChar*/
-	0x00,0x00,0x00,0x00,0x00,0x00,
-	0x5F,0x00,0x00,0x00,0x00,0x00,//   !		32,33
-	0x07,0x00,0x07,0x00,0x00,0x00,
-	0x14,0x7F,0x14,0x7F,0x14,0x00,// " #		34,35
-	0x24,0x2A,0x7F,0x2A,0x12,0x00,
-	0x23,0x13,0x08,0x64,0x62,0x00,// 0x %		36,37
-	0x36,0x49,0x55,0x22,0x50,0x00,
-	0x05,0x03,0x00,0x00,0x00,0x00,// & '		38,39
-	0x1C,0x22,0x41,0x00,0x00,0x00,
-	0x41,0x22,0x1C,0x00,0x00,0x00,// ( )		40,41
-	0x08,0x2A,0x1C,0x2A,0x08,0x00,
-	0x08,0x08,0x3E,0x08,0x08,0x00,// * +		42,43
-	0x50,0x30,0x00,0x00,0x00,0x00,
-	0x08,0x08,0x08,0x00,0x00,0x00,// , -		44,45
-	0x30,0x30,0x00,0x00,0x00,0x00,
-	0x20,0x10,0x08,0x04,0x02,0x00,// . /		46,47
-	0x3E,0x51,0x49,0x45,0x3E,0x00,
-	0x42,0x7F,0x40,0x00,0x00,0x00,// 0 1		48,49
-	0x42,0x61,0x51,0x49,0x46,0x00,
-	0x21,0x41,0x45,0x4B,0x31,0x00,// 2 3		50,51
-	0x18,0x14,0x12,0x7F,0x10,0x00,
-	0x27,0x45,0x45,0x45,0x39,0x00,// 4 5		52,53
-	0x3C,0x4A,0x49,0x49,0x30,0x00,
-	0x01,0x71,0x09,0x05,0x03,0x00,// 6 7		54,55
-	0x36,0x49,0x49,0x49,0x36,0x00,
-	0x06,0x49,0x49,0x29,0x1E,0x00,// 8 9		56,57
-	0x36,0x00,0x00,0x00,0x00,0x00,
-	0x56,0x36,0x00,0x00,0x00,0x00,// : ;		58,59
-	0x08,0x14,0x22,0x41,0x00,0x00,
-	0x14,0x14,0x14,0x00,0x00,0x00,// < =		60,61
-	0x41,0x22,0x14,0x08,0x00,0x00,
-	0x02,0x01,0x51,0x09,0x06,0x00,// > ?		62,63
-	0x32,0x49,0x79,0x41,0x3E,0x00,
-	0x7E,0x11,0x11,0x7E,0x00,0x00,// @ A		64,65
-	0x7F,0x49,0x49,0x36,0x00,0x00,
-	0x3E,0x41,0x41,0x22,0x00,0x00,// B C		66,67
-	0x7F,0x41,0x22,0x1C,0x00,0x00,
-	0x7F,0x49,0x49,0x41,0x00,0x00,// D E		68,69
-	0x7F,0x09,0x09,0x01,0x00,0x00,
-	0x3E,0x41,0x51,0x32,0x00,0x00,// F G		70,71
-	0x7F,0x08,0x08,0x7F,0x00,0x00,
-	0x41,0x7F,0x41,0x00,0x00,0x00,// H I		72,73
-	0x20,0x40,0x41,0x3F,0x01,0x00,
-	0x7F,0x08,0x14,0x22,0x41,0x00,// J K		74,75
-	0x7F,0x40,0x40,0x00,0x00,0x00,
-	0x7F,0x02,0x04,0x02,0x7F,0x00,// L M		76,77
-	0x7F,0x04,0x08,0x10,0x7F,0x00,
-	0x3E,0x41,0x41,0x3E,0x00,0x00,// N O		78,79
-	0x7F,0x09,0x09,0x06,0x00,0x00,
-	0x3E,0x41,0x51,0x21,0x5E,0x00,// P Q		80,81
-	0x7F,0x19,0x29,0x46,0x00,0x00,
-	0x46,0x49,0x49,0x31,0x00,0x00,// R S		82,83
-	0x01,0x7F,0x01,0x00,0x00,0x00,
-	0x3F,0x40,0x40,0x3F,0x00,0x00,// T U		84,85
-	0x1F,0x20,0x40,0x20,0x1F,0x00,
-	0x7F,0x20,0x18,0x20,0x7F,0x00,// V W		86,87
-	0x63,0x14,0x08,0x14,0x63,0x00,
-	0x03,0x04,0x78,0x04,0x03,0x00,// X Y		88,89
-	0x61,0x51,0x49,0x45,0x43,0x00,
-	0x7F,0x41,0x41,0x00,0x00,0x00,// Z [		90,91
-	0x02,0x04,0x08,0x10,0x20,0x00,
-	0x41,0x41,0x7F,0x00,0x00,0x00,// \ ]		92,93
-	0x04,0x02,0x01,0x02,0x04,0x00,
-	0x40,0x40,0x40,0x00,0x00,0x00,// ^ _		94,95
-	0x01,0x02,0x04,0x00,0x00,0x00,
-	0x20,0x54,0x54,0x78,0x00,0x00,// ` a		96,97
-	0x7F,0x48,0x44,0x38,0x00,0x00,
-	0x38,0x44,0x44,0x00,0x00,0x00,// b c		98,99
-	0x38,0x44,0x48,0x7F,0x00,0x00,
-	0x38,0x54,0x54,0x18,0x00,0x00,// d e		100,101
-	0x08,0x7E,0x09,0x01,0x00,0x00,
-	0x08,0x14,0x54,0x3C,0x00,0x00,// f g		102,103
-	0x7F,0x08,0x04,0x78,0x00,0x00,
-	0x44,0x7D,0x40,0x00,0x00,0x00,// h i		104,105
-	0x20,0x40,0x44,0x3D,0x00,0x00,
-	0x7F,0x10,0x28,0x44,0x00,0x00,// j k		106,107
-	0x41,0x7F,0x40,0x00,0x00,0x00,
-	0x7C,0x04,0x18,0x04,0x78,0x00,// l m		108,109
-	0x7C,0x08,0x04,0x78,0x00,0x00,
-	0x38,0x44,0x44,0x38,0x00,0x00,// n o		110,111
-	0x7C,0x14,0x14,0x08,0x00,0x00,
-	0x08,0x14,0x18,0x7C,0x00,0x00,// p q		112,113
-	0x7C,0x08,0x04,0x08,0x00,0x00,
-	0x48,0x54,0x54,0x20,0x00,0x00,// r s		114,115
-	0x04,0x3F,0x44,0x40,0x00,0x00,
-	0x3C,0x40,0x20,0x7C,0x00,0x00,// t u		116,117
-	0x1C,0x20,0x40,0x20,0x1C,0x00,
-	0x3C,0x40,0x30,0x40,0x3C,0x00,// v w		118,119
-	0x44,0x28,0x10,0x28,0x44,0x00,
-	0x0C,0x50,0x50,0x3C,0x00,0x00,// x y		120,121
-	0x44,0x64,0x54,0x4C,0x44,0x00,
-	0x08,0x36,0x41,0x00,0x00,0x00,// z {		122,123
-	0x7F,0x00,0x00,0x00,0x00,0x00,
-	0x41,0x36,0x08,0x00,0x00,0x00,// | }		124,125
-	0x08,0x2A,0x1C,0x08,0x00,0x00,
-	0x08,0x1C,0x2A,0x08,0x00,0x00,// -> <-		126,127
-	0x14,0x36,0x77,0x36,0x14,0x00 };//			128
 
 Screen *ssd1306_spi::DrvDrawString(void *driverHandlerPtr, char *string, int x, int y, int foreColor, int inkColor) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
-  return DrvDrawStringBox(driverHandlerPtr, drv->box, string, x, y, drv->terminalMode, drv->wordWrap, foreColor, inkColor);
+  return DrvDrawStringClip(driverHandlerPtr, drv->box, string, x, y, drv->terminalMode, drv->wordWrap, foreColor, inkColor);
 }
 
-Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
+Screen *ssd1306_spi::DrvDrawStringClip(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
 	box_s box__;
 	if(box) {
 		box__.x_min = box->x_min;
@@ -703,11 +612,11 @@ Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box,
 	int CharCnt = 0;
 	bool ulOpaque = false;
 #ifdef __AVR_MEGA__
-	chWidth = pgm_read_byte(&CharTable6x8[2]);
-	chHeight = pgm_read_byte(&CharTable6x8[3]);
+	chWidth = pgm_read_byte(&fontTable6x8[2]);
+	chHeight = pgm_read_byte(&fontTable6x8[3]);
 #else // !__AVR_MEGA__
-	chWidth = CharTable6x8[2];
-	chHeight = CharTable6x8[3];
+	chWidth = fontTable6x8[2];
+	chHeight = fontTable6x8[3];
 #endif // __AVR_MEGA__
 	do {
 		char Char = *pcString;
@@ -715,11 +624,11 @@ Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box,
 			return (Screen *)driverHandlerPtr;
 		}
 #ifdef __AVR_MEGA__
-		CharPtr = ((Char - pgm_read_byte(&CharTable6x8[4])) * chWidth) + pgm_read_byte(&CharTable6x8[0]);
-		if(Char < pgm_read_byte(&CharTable6x8[4]) || Char > pgm_read_byte(&CharTable6x8[5]))
+		CharPtr = ((Char - pgm_read_byte(&fontTable6x8[4])) * chWidth) + pgm_read_byte(&fontTable6x8[0]);
+		if(Char < pgm_read_byte(&fontTable6x8[4]) || Char > pgm_read_byte(&fontTable6x8[5]))
 #else // !__AVR_MEGA__
-		CharPtr = ((Char - CharTable6x8[4]) * chWidth) + CharTable6x8[0];
-		if (Char < CharTable6x8[4] || Char > CharTable6x8[5])
+		CharPtr = ((Char - fontTable6x8[4]) * chWidth) + fontTable6x8[0];
+		if (Char < fontTable6x8[4] || Char > fontTable6x8[5])
 #endif // __AVR_MEGA__
 		{
 			//chWidth_Tmp = chWidth;
@@ -730,9 +639,9 @@ Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box,
 			if (!terminalMode) {
 				for (Tmp = 1; Tmp < chWidth; Tmp++) {
 #ifdef __AVR_MEGA__
-					Temp = pgm_read_byte(&CharTable6x8[Tmp + CharPtr]);
+					Temp = pgm_read_byte(&fontTable6x8[Tmp + CharPtr]);
 #else
-					Temp = CharTable6x8[Tmp + CharPtr];
+					Temp = fontTable6x8[Tmp + CharPtr];
 #endif
 					if (Temp == 0)
 						break;
@@ -751,21 +660,21 @@ Screen *ssd1306_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box,
 					int YY = 0;
 					for (XX = 0; XX < Tmp; XX++) {
 #ifdef __AVR_MEGA__
-						Temp = pgm_read_byte(&CharTable6x8[XX + CharPtr]);
+						Temp = pgm_read_byte(&fontTable6x8[XX + CharPtr]);
 #else // !__AVR_MEGA__
-						Temp = CharTable6x8[XX + CharPtr];
+						Temp = fontTable6x8[XX + CharPtr];
 #endif // __AVR_MEGA__
 #ifndef SSD1306_USE_NO_BUF
 						for (YY = 0; YY < chHeight; YY++) {
 							if (Temp & 0x1)
 							{
-								DrvDrawPixelBox(driverHandlerPtr, &box__,
+								DrvDrawPixelClip(driverHandlerPtr, &box__,
 									XX + Cursor_X, YY + Cursor_Y, inkColor);
 							}
 							else
 							{
 								if (ulOpaque)
-									DrvDrawPixelBox(driverHandlerPtr, &box__,
+									DrvDrawPixelClip(driverHandlerPtr, &box__,
 										XX + Cursor_X, YY + Cursor_Y, foreColor);
 							}
 							Temp = Temp >> 1;

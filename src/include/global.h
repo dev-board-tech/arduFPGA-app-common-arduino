@@ -75,19 +75,42 @@ typedef enum {
 /*
  * Int definitions.
  */
-
+/*#ifndef u8
 typedef unsigned char u8;
+#endif
+#ifndef s8
 typedef signed char s8;
+#endif
+#ifndef u16
 typedef unsigned short u16;
+#endif
+#ifndef s16
 typedef signed short s16;
+#endif
+#ifndef u32
 typedef unsigned long u32;
+#endif
+#ifndef s32
 typedef signed long s32;
+#endif
+#ifndef ui
 typedef unsigned int ui;
+#endif
+#ifndef si
 typedef signed int si;
+#endif
+#ifndef u64
 typedef unsigned long long u64;
+#endif
+#ifndef s64
 typedef signed long long s64;
+#endif
+#ifndef ff
 typedef float ff;
+#endif
+#ifndef dd
 typedef double dd;
+#endif*/
 
 typedef struct box_s{
     int x_min;
@@ -106,7 +129,7 @@ typedef enum {
 	PORTRAIT,
 	LANDSCAPE_FLIPPED,
 	PORTRAIT_FLIPPED,
-} screenRotation;
+} screenOrientation;
 
 //typedef char* string;
 

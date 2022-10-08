@@ -30,22 +30,23 @@ public:
 	Screen *init();
 	void idle();
 	void triggerRefresh();
+	void triggerUpdate();
 	int getX();
 	int getY();
 	Screen *drvRefresh();
 	Screen *drvOn(bool state);
 	Screen *drvSetContrast(byte cont);
 	Screen *drvDrawPixel(int x, int y, int color);
-	Screen *drvDrawPixelBox(struct box_s *box, int x, int y, int color);
+	Screen *drvDrawPixelClip(struct box_s *box, int x, int y, int color);
 	Screen *drvDrawRectangle(int x, int y, int x_size, int y_size, bool fill, int color);
-	Screen *drvDrawRectangleBox(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
+	Screen *drvDrawRectangleClip(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
 	Screen *drvDrawHLine(int x1, int x2, int y, byte width, int color);
-	Screen *drvDrawHLineBox(struct box_s *box, int x1, int x2, int y, byte width, int color);
+	Screen *drvDrawHLineClip(struct box_s *box, int x1, int x2, int y, byte width, int color);
 	Screen *drvDrawVLine(int y1, int y2, int x, byte width, int color);
-	Screen *drvDrawVLineBox(struct box_s *box, int y1, int y2, int x, byte width, int color);
+	Screen *drvDrawVLineClip(struct box_s *box, int y1, int y2, int x, byte width, int color);
 	Screen *drvClear(int color);
 	Screen *drvDrawString(char *string, int x, int y, int foreColor, int inkColor);
-	Screen *drvDrawStringBox(struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor);
+	Screen *drvDrawStringClip(struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor);
 
 	Screen *setBox(struct box_s *box) {
 		this->box = box;
@@ -101,14 +102,14 @@ public:
 	bool reverseColor;
 	box_s *box;
 	SPIClass *spi;
-	screenRotation screenRotate;
+	screenOrientation ScreenOrientation;
 #ifndef SSD1306_USE_NO_BUF && WDPW21_USE_NO_BUF
 #ifdef SSD1306_BUF_SIZE_BYTES
 	byte buf[SSD1306_BUF_SIZE_BYTES];
 #elif WDPW21_BUF_SIZE_BYTES
 	byte buf[WDPW21_BUF_SIZE_BYTES];
 #else
-	byte *buf;
+	uint8_t *buf;
 #endif // SSD1306_BUF_SIZE_BYTES
 #endif // SSD1306_USE_BUF
 private:
@@ -121,26 +122,29 @@ protected:
 	Screen *(*InitPtr)(void *driverHandlerPtr);
 	void (*IdlePtr)(void *driverHandlerPtr);
 	void (*TriggerRefreshPtr)(void *driverHandlerPtr);
+	void (*TriggerUpdatePtr)(void *driverHandlerPtr);
 	int (*GetXPtr)(void *driverHandlerPtr);
 	int (*GetYPtr)(void *driverHandlerPtr);
 	Screen *(*DrvRefreshPtr)(void *driverHandlerPtr);
 	Screen *(*DrvOnPtr)(void *driverHandlerPtr, bool state);
 	Screen *(*DrvSetContrastPtr)(void *driverHandlerPtr, byte cont);
 	Screen *(*DrvDrawPixelPtr)(void *driverHandlerPtr, int x, int y, int color);
-	Screen *(*DrvDrawPixelBoxPtr)(void *driverHandlerPtr, struct box_s *box, int x, int y, int color);
+	Screen *(*DrvDrawPixelClipPtr)(void *driverHandlerPtr, struct box_s *box, int x, int y, int color);
 	Screen *(*DrvDrawRectanglePtr)(void *driverHandlerPtr, int x, int y, int x_size, int y_size, bool fill, int color);
-	Screen *(*DrvDrawRectangleBoxPtr)(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
+	Screen *(*DrvDrawRectangleClipPtr)(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
 	Screen *(*DrvDrawHLinePtr)(void *driverHandlerPtr, int x1, int x2, int y, byte width, int color);
-	Screen *(*DrvDrawHLineBoxPtr)(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color);
+	Screen *(*DrvDrawHLineClipPtr)(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color);
 	Screen *(*DrvDrawVLinePtr)(void *driverHandlerPtr, int y1, int y2, int x, byte width, int color);
-	Screen *(*DrvDrawVLineBoxPtr)(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color);
+	Screen *(*DrvDrawVLineClipPtr)(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color);
 	Screen *(*DrvClearPtr)(void *driverHandlerPtr, int color);
 	Screen *(*DrvDrawStringPtr)(void *driverHandlerPtr, char *string, int x, int y, int foreColor, int inkColor);
-	Screen *(*DrvDrawStringBoxPtr)(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor);
+	Screen *(*DrvDrawStringClipPtr)(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor);
     void *DriverPtr;
 	uint8_t CsPin;
 	uint8_t DcPin;
 	uint8_t RstPin;
+	uint8_t VccEnPin;
+	uint8_t PModEnPin;
 	uint8_t Busy;
 };
 

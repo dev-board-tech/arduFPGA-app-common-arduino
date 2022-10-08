@@ -23,7 +23,9 @@
 #define __UTIL_FAT_H__
 
 #include <string.h>
+#if __AVR_MEGA__
 #include <avr/pgmspace.h>
+#endif
 #include "util.h"
 
 #ifdef FILINFO

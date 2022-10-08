@@ -26,11 +26,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <avr/pgmspace.h>
 #include <string.h>
 #include <SPI.h>
 #include "../include/global.h"
-#include "../dev/screen.h"
+#include "font6x8.h"
+#include "SPI.h"
 
 #if __AVR_MEGA__
 #include <avr/pgmspace.h>
@@ -261,29 +261,30 @@ void wpdW21_spi::deriverInit() {
 	InitPtr = &wpdW21_spi::Init;
 	IdlePtr = &wpdW21_spi::Idle;
 	TriggerRefreshPtr = &wpdW21_spi::TriggerRefresh;
+	TriggerUpdatePtr = &wpdW21_spi::TriggerUpdate;
 	GetXPtr = &wpdW21_spi::GetX;
 	GetYPtr = &wpdW21_spi::GetY;
 	DrvRefreshPtr = &wpdW21_spi::DrvRefresh;
 	DrvOnPtr = &wpdW21_spi::DrvOn;
 	DrvSetContrastPtr = &wpdW21_spi::DrvSetContrast;
 	DrvDrawPixelPtr = &wpdW21_spi::DrvDrawPixel;
-	DrvDrawPixelBoxPtr = &wpdW21_spi::DrvDrawPixelBox;
+	DrvDrawPixelClipPtr = &wpdW21_spi::DrvDrawPixelClip;
 	DrvDrawRectanglePtr = &wpdW21_spi::DrvDrawRectangle;
-	DrvDrawRectangleBoxPtr = &wpdW21_spi::DrvDrawRectangleBox;
+	DrvDrawRectangleClipPtr = &wpdW21_spi::DrvDrawRectangleClip;
 	DrvDrawHLinePtr = &wpdW21_spi::DrvDrawHLine;
-	DrvDrawHLineBoxPtr = &wpdW21_spi::DrvDrawHLineBox;
+	DrvDrawHLineClipPtr = &wpdW21_spi::DrvDrawHLineClip;
 	DrvDrawVLinePtr = &wpdW21_spi::DrvDrawVLine;
-	DrvDrawVLineBoxPtr = &wpdW21_spi::DrvDrawVLineBox;
+	DrvDrawVLineClipPtr = &wpdW21_spi::DrvDrawVLineClip;
 	DrvClearPtr = &wpdW21_spi::DrvClear;
 	DrvDrawStringPtr = &wpdW21_spi::DrvDrawString;
-	DrvDrawStringBoxPtr = &wpdW21_spi::DrvDrawStringBox;
+	DrvDrawStringClipPtr = &wpdW21_spi::DrvDrawStringClip;
 	DriverPtr = this;
 }
 
 void wpdW21_spi::Idle(void *driverHandlerPtr) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	switch(drv->state) {
-	case drv->PWR_ON:
+	case drv->PWR_ON_REFRESH:
 		if(drv->lcd_chkstatus_nonblocking()) {
 			drv->WrCmd(0x00);
 			SPI_WDPW21_DATA(drv->DcPin);
@@ -351,32 +352,103 @@ void wpdW21_spi::Idle(void *driverHandlerPtr) {
 			}
 			SPI_WDPW21_CS_DEASSERT(drv->CsPin);
 			drv->WrCmd(0x04);
-			drv->state = drv->REFRESH;
+			drv->state = drv->REFRESH_REFRESH;
 			delay(2);
 		}
 		break;
-	case drv->REFRESH:
+	case drv->REFRESH_REFRESH:
 		if(drv->lcd_chkstatus_nonblocking()) {
 			drv->WrCmd(0x12);
-			drv->state = drv->PWR_OFF;
+			drv->state = drv->PWR_OFF_REFRESH;
 			delay(2);
 		}
 		break;
-	case drv->PWR_OFF:
+	case drv->PWR_OFF_REFRESH:
 		if(drv->lcd_chkstatus_nonblocking()) {
 			drv->WrCmd(0x02);
 			drv->state = drv->IDLE;
 			delay(2);
 		}
 		break;
+	case drv->PWR_ON_REPAINT:
+		if(drv->lcd_chkstatus_nonblocking()) {
+			drv->WrCmd(0xD2); //Factory setting parameters
+			drv->WrData(0x3F);
+
+			drv->WrCmd(0x00);
+			drv->WrData (0x6F);  //from outside
+
+			drv->WrCmd(0x01);  			//power setting
+			drv->WrData (0x03);
+			drv->WrData (0x00);
+			drv->WrData (0x2b);
+			drv->WrData (0x2b);
+
+			drv->WrCmd(0x06);
+			drv->WrData(0x3f);
+
+			drv->WrCmd(0x2A);
+			drv->WrData(0x00);
+			drv->WrData(0x00);
+
+			drv->WrCmd(0x30); //PLL
+			drv->WrData(0x05);
+
+			drv->WrCmd(0x50);	//VCOM AND DATA INTERVAL SETTING
+			drv->WrData(0xF2);
+
+			drv->WrCmd(0x60);
+			drv->WrData(0x22);
+
+			drv->WrCmd(0x82);		//VCOM
+			drv->WrData(0x0);//-0.1v
+
+			drv->WrCmd(0xe3);
+			drv->WrData(0x33);
+
+			drv->part_lut_bw();
+
+			drv->WrCmd(0x91);			//resolution setting
+			drv->WrCmd(0x90);			//resolution setting
+			drv->WrData (0);
+			drv->WrData (79);
+			drv->WrData (0);
+			drv->WrData (127);
+			drv->WrData (0x00);
+			drv->WrCmd(0x10);
+			SPI_WDPW21_DATA(drv->DcPin);
+			for(uint16_t i=0;i<1280;i++) {
+				drv->WrData(drv->backBuf[i]);
+			}
+			drv->WrCmd(0x13);	      //Transfer new data
+			for(int i = 0; i < 1280; i++) {
+				drv->WrData(drv->buf[i]);
+				drv->backBuf[i] = drv->buf[i];
+			}
+			SPI_WDPW21_CS_DEASSERT(drv->CsPin);
+			drv->WrCmd(0x04);
+			drv->state = drv->REFRESH_REFRESH;
+			delay(2);
+		}
+	}
+	if(drv->state == drv->IDLE && drv->repaintCnt != 0) {
+		drv->repaintCnt = 0;
+		drv->state = drv->PWR_ON_REPAINT;
+	}
+	if(drv->state == drv->IDLE && drv->refreshCnt != 0) {
+		drv->refreshCnt = 0;
+		drv->state = drv->PWR_ON_REFRESH;
 	}
 }
 
 void wpdW21_spi::TriggerRefresh(void *driverHandlerPtr) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	if(drv->state == drv->IDLE) {
-		drv->state = drv->PWR_ON;
-	}
+	drv->refreshCnt++;
+}
+
+void wpdW21_spi::TriggerUpdate(void *driverHandlerPtr) {
+	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
+	drv->repaintCnt++;
 }
 
 void wpdW21_spi::full_lut_bw() {
@@ -485,7 +557,7 @@ void wpdW21_spi::WrData(byte data) {
 
 int wpdW21_spi::GetX(void *driverHandlerPtr) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	if(drv->screenRotate == screenRotation::PORTRAIT || drv->screenRotate == screenRotation::PORTRAIT_FLIPPED)
+	if(drv->ScreenOrientation == screenOrientation::PORTRAIT || drv->ScreenOrientation == screenOrientation::PORTRAIT_FLIPPED)
 		return 80;
 	else
 		return 128;
@@ -493,7 +565,7 @@ int wpdW21_spi::GetX(void *driverHandlerPtr) {
 
 int wpdW21_spi::GetY(void *driverHandlerPtr) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	if(drv->screenRotate == screenRotation::PORTRAIT || drv->screenRotate == screenRotation::PORTRAIT_FLIPPED)
+	if(drv->ScreenOrientation == screenOrientation::PORTRAIT || drv->ScreenOrientation == screenOrientation::PORTRAIT_FLIPPED)
 		return 128;
 	else
 		return 80;
@@ -607,11 +679,11 @@ Screen *wpdW21_spi::DrvSetContrast(void *driverHandlerPtr, byte cont) {
 
 Screen *wpdW21_spi::DrvDrawPixel(void *driverHandlerPtr, int x, int y, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	DrvDrawPixelBox(driverHandlerPtr, drv->box, x, y, color);
+	DrvDrawPixelClip(driverHandlerPtr, drv->box, x, y, color);
 	return (Screen *)driverHandlerPtr;
 }
 
-Screen *wpdW21_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
+Screen *wpdW21_spi::DrvDrawPixelClip(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	/* Check if outside the display */
 	if(x < 0 || y < 0 || y > GetY(driverHandlerPtr))
@@ -627,8 +699,8 @@ Screen *wpdW21_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, i
 	/* Calculate the byte where the bit will be written. */
 	unsigned char *tmp_buff;
 	byte mask;
-	if(drv->screenRotate == screenRotation::PORTRAIT || drv->screenRotate == screenRotation::LANDSCAPE) {
-		if(drv->screenRotate == screenRotation::LANDSCAPE) {
+	if(drv->ScreenOrientation == screenOrientation::PORTRAIT || drv->ScreenOrientation == screenOrientation::LANDSCAPE) {
+		if(drv->ScreenOrientation == screenOrientation::LANDSCAPE) {
 			int t = 79 - y;
 			y = x;
 			x = t;
@@ -639,8 +711,8 @@ Screen *wpdW21_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, i
 #else // !__AVR_MEGA__
 		mask = 0x80 >> (x & 0x07);
 #endif // __AVR_MEGA__
-	} else if(drv->screenRotate == screenRotation::PORTRAIT_FLIPPED || drv->screenRotate == screenRotation::LANDSCAPE_FLIPPED) {
-		if(drv->screenRotate == screenRotation::PORTRAIT_FLIPPED) {
+	} else if(drv->ScreenOrientation == screenOrientation::PORTRAIT_FLIPPED || drv->ScreenOrientation == screenOrientation::LANDSCAPE_FLIPPED) {
+		if(drv->ScreenOrientation == screenOrientation::PORTRAIT_FLIPPED) {
 			y = GetY(driverHandlerPtr) - y;
 			x = GetX(driverHandlerPtr) - x;
 		} else {
@@ -665,10 +737,10 @@ Screen *wpdW21_spi::DrvDrawPixelBox(void *driverHandlerPtr, struct box_s *box, i
 
 Screen *wpdW21_spi::DrvDrawRectangle(void *driverHandlerPtr, int x, int y, int x_size, int y_size, bool fill, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	return DrvDrawRectangleBox(driverHandlerPtr, drv->box, x, y, x_size, y_size, fill, color);
+	return DrvDrawRectangleClip(driverHandlerPtr, drv->box, x, y, x_size, y_size, fill, color);
 }
 
-Screen *wpdW21_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
+Screen *wpdW21_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	box_s box__;
 	if(box) {
@@ -706,7 +778,7 @@ Screen *wpdW21_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *bo
 				return (Screen *)driverHandlerPtr;
 			register int x = _x_start;
 			for( ; x < _x_end ; x++) {
-				DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+				DrvDrawPixelClip(driverHandlerPtr, &box__, x, LineCnt, color);
 			}
 		}
 		return (Screen *)driverHandlerPtr;
@@ -719,13 +791,13 @@ Screen *wpdW21_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *bo
 		_x_start = box__.x_min;
 	if(y >= box__.y_min) {
 		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, LineCnt, y, color);
 		}
 	}
 
 	if(y_end <= box__.y_max) {
 		for(LineCnt = _x_start ; LineCnt < _x_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, LineCnt, y_end - 1, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, LineCnt, y_end - 1, color);
 		}
 	}
 
@@ -737,13 +809,13 @@ Screen *wpdW21_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *bo
 		_y_start = box__.y_min;
 	if(x >= box__.x_min) {
 		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, x, LineCnt, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, x, LineCnt, color);
 		}
 	}
 
 	if(x_end <= box__.x_max) {
 		for(LineCnt = _y_start ; LineCnt < _y_end ; LineCnt++) {
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (x_end - 1), LineCnt, color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (x_end - 1), LineCnt, color);
 		}
 	}
 	return (Screen *)driverHandlerPtr;
@@ -751,10 +823,10 @@ Screen *wpdW21_spi::DrvDrawRectangleBox(void *driverHandlerPtr, struct box_s *bo
 
 Screen *wpdW21_spi::DrvDrawHLine(void *driverHandlerPtr, int x1, int x2, int y, byte width, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	return DrvDrawHLineBox(driverHandlerPtr, drv->box, x1, x2, y, width, color);
+	return DrvDrawHLineClip(driverHandlerPtr, drv->box, x1, x2, y, width, color);
 }
 
-Screen *wpdW21_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
+Screen *wpdW21_spi::DrvDrawHLineClip(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	box_s box__;
 	if(box) {
@@ -786,17 +858,17 @@ Screen *wpdW21_spi::DrvDrawHLineBox(void *driverHandlerPtr, struct box_s *box, i
 	for(;X1_Tmp < X2_Tmp; X1_Tmp++) {
 		int _Y_ = y - Half_width1;
 		for(; _Y_ < y + Half_width2; _Y_++)
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(X1_Tmp), (int)(_Y_), color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (int)(X1_Tmp), (int)(_Y_), color);
 	}
 	return (Screen *)driverHandlerPtr;
 }
 
 Screen *wpdW21_spi::DrvDrawVLine(void *driverHandlerPtr, int y1, int y2, int x, byte width, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	return DrvDrawVLineBox(driverHandlerPtr, drv->box, y1, y2, x, width, color);
+	return DrvDrawVLineClip(driverHandlerPtr, drv->box, y1, y2, x, width, color);
 }
 
-Screen *wpdW21_spi::DrvDrawVLineBox(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
+Screen *wpdW21_spi::DrvDrawVLineClip(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	box_s box__;
 	if(box) {
@@ -828,7 +900,7 @@ Screen *wpdW21_spi::DrvDrawVLineBox(void *driverHandlerPtr, struct box_s *box, i
 	for(;Y1_Tmp < Y2_Tmp; Y1_Tmp++) {
 		int _X_ = x - Half_width1;
 		for(; _X_ < x + Half_width2; _X_++)
-			DrvDrawPixelBox(driverHandlerPtr, &box__, (int)(_X_), (int)(Y1_Tmp), color);
+			DrvDrawPixelClip(driverHandlerPtr, &box__, (int)(_X_), (int)(Y1_Tmp), color);
 	}
 	return (Screen *)driverHandlerPtr;
 }
@@ -840,118 +912,12 @@ Screen *wpdW21_spi::DrvClear(void *driverHandlerPtr, int color) {
 }
 
 /*#####################################################*/
-#ifdef __AVR_MEGA__
-const byte CharTable6x8[] PROGMEM =
-#else
-const byte CharTable6x8[] =
-#endif
-{
-	6                          ,0          ,6          ,8          ,32            ,128,
-	/*  OffsetOfBeginingCharTable  ,0=Y-X|1=X-X,X-Dimension,Y-Dimension,BeginAsciiChar,EndAsciiChar*/
-	0x00,0x00,0x00,0x00,0x00,0x00,
-	0x5F,0x00,0x00,0x00,0x00,0x00,//   !		32,33
-	0x07,0x00,0x07,0x00,0x00,0x00,
-	0x14,0x7F,0x14,0x7F,0x14,0x00,// " #		34,35
-	0x24,0x2A,0x7F,0x2A,0x12,0x00,
-	0x23,0x13,0x08,0x64,0x62,0x00,// 0x %		36,37
-	0x36,0x49,0x55,0x22,0x50,0x00,
-	0x05,0x03,0x00,0x00,0x00,0x00,// & '		38,39
-	0x1C,0x22,0x41,0x00,0x00,0x00,
-	0x41,0x22,0x1C,0x00,0x00,0x00,// ( )		40,41
-	0x08,0x2A,0x1C,0x2A,0x08,0x00,
-	0x08,0x08,0x3E,0x08,0x08,0x00,// * +		42,43
-	0x50,0x30,0x00,0x00,0x00,0x00,
-	0x08,0x08,0x08,0x00,0x00,0x00,// , -		44,45
-	0x30,0x30,0x00,0x00,0x00,0x00,
-	0x20,0x10,0x08,0x04,0x02,0x00,// . /		46,47
-	0x3E,0x51,0x49,0x45,0x3E,0x00,
-	0x42,0x7F,0x40,0x00,0x00,0x00,// 0 1		48,49
-	0x42,0x61,0x51,0x49,0x46,0x00,
-	0x21,0x41,0x45,0x4B,0x31,0x00,// 2 3		50,51
-	0x18,0x14,0x12,0x7F,0x10,0x00,
-	0x27,0x45,0x45,0x45,0x39,0x00,// 4 5		52,53
-	0x3C,0x4A,0x49,0x49,0x30,0x00,
-	0x01,0x71,0x09,0x05,0x03,0x00,// 6 7		54,55
-	0x36,0x49,0x49,0x49,0x36,0x00,
-	0x06,0x49,0x49,0x29,0x1E,0x00,// 8 9		56,57
-	0x36,0x00,0x00,0x00,0x00,0x00,
-	0x56,0x36,0x00,0x00,0x00,0x00,// : ;		58,59
-	0x08,0x14,0x22,0x41,0x00,0x00,
-	0x14,0x14,0x14,0x00,0x00,0x00,// < =		60,61
-	0x41,0x22,0x14,0x08,0x00,0x00,
-	0x02,0x01,0x51,0x09,0x06,0x00,// > ?		62,63
-	0x32,0x49,0x79,0x41,0x3E,0x00,
-	0x7E,0x11,0x11,0x7E,0x00,0x00,// @ A		64,65
-	0x7F,0x49,0x49,0x36,0x00,0x00,
-	0x3E,0x41,0x41,0x22,0x00,0x00,// B C		66,67
-	0x7F,0x41,0x22,0x1C,0x00,0x00,
-	0x7F,0x49,0x49,0x41,0x00,0x00,// D E		68,69
-	0x7F,0x09,0x09,0x01,0x00,0x00,
-	0x3E,0x41,0x51,0x32,0x00,0x00,// F G		70,71
-	0x7F,0x08,0x08,0x7F,0x00,0x00,
-	0x41,0x7F,0x41,0x00,0x00,0x00,// H I		72,73
-	0x20,0x40,0x41,0x3F,0x01,0x00,
-	0x7F,0x08,0x14,0x22,0x41,0x00,// J K		74,75
-	0x7F,0x40,0x40,0x00,0x00,0x00,
-	0x7F,0x02,0x04,0x02,0x7F,0x00,// L M		76,77
-	0x7F,0x04,0x08,0x10,0x7F,0x00,
-	0x3E,0x41,0x41,0x3E,0x00,0x00,// N O		78,79
-	0x7F,0x09,0x09,0x06,0x00,0x00,
-	0x3E,0x41,0x51,0x21,0x5E,0x00,// P Q		80,81
-	0x7F,0x19,0x29,0x46,0x00,0x00,
-	0x46,0x49,0x49,0x31,0x00,0x00,// R S		82,83
-	0x01,0x7F,0x01,0x00,0x00,0x00,
-	0x3F,0x40,0x40,0x3F,0x00,0x00,// T U		84,85
-	0x1F,0x20,0x40,0x20,0x1F,0x00,
-	0x7F,0x20,0x18,0x20,0x7F,0x00,// V W		86,87
-	0x63,0x14,0x08,0x14,0x63,0x00,
-	0x03,0x04,0x78,0x04,0x03,0x00,// X Y		88,89
-	0x61,0x51,0x49,0x45,0x43,0x00,
-	0x7F,0x41,0x41,0x00,0x00,0x00,// Z [		90,91
-	0x02,0x04,0x08,0x10,0x20,0x00,
-	0x41,0x41,0x7F,0x00,0x00,0x00,// \ ]		92,93
-	0x04,0x02,0x01,0x02,0x04,0x00,
-	0x40,0x40,0x40,0x00,0x00,0x00,// ^ _		94,95
-	0x01,0x02,0x04,0x00,0x00,0x00,
-	0x20,0x54,0x54,0x78,0x00,0x00,// ` a		96,97
-	0x7F,0x48,0x44,0x38,0x00,0x00,
-	0x38,0x44,0x44,0x00,0x00,0x00,// b c		98,99
-	0x38,0x44,0x48,0x7F,0x00,0x00,
-	0x38,0x54,0x54,0x18,0x00,0x00,// d e		100,101
-	0x08,0x7E,0x09,0x01,0x00,0x00,
-	0x08,0x14,0x54,0x3C,0x00,0x00,// f g		102,103
-	0x7F,0x08,0x04,0x78,0x00,0x00,
-	0x44,0x7D,0x40,0x00,0x00,0x00,// h i		104,105
-	0x20,0x40,0x44,0x3D,0x00,0x00,
-	0x7F,0x10,0x28,0x44,0x00,0x00,// j k		106,107
-	0x41,0x7F,0x40,0x00,0x00,0x00,
-	0x7C,0x04,0x18,0x04,0x78,0x00,// l m		108,109
-	0x7C,0x08,0x04,0x78,0x00,0x00,
-	0x38,0x44,0x44,0x38,0x00,0x00,// n o		110,111
-	0x7C,0x14,0x14,0x08,0x00,0x00,
-	0x08,0x14,0x18,0x7C,0x00,0x00,// p q		112,113
-	0x7C,0x08,0x04,0x08,0x00,0x00,
-	0x48,0x54,0x54,0x20,0x00,0x00,// r s		114,115
-	0x04,0x3F,0x44,0x40,0x00,0x00,
-	0x3C,0x40,0x20,0x7C,0x00,0x00,// t u		116,117
-	0x1C,0x20,0x40,0x20,0x1C,0x00,
-	0x3C,0x40,0x30,0x40,0x3C,0x00,// v w		118,119
-	0x44,0x28,0x10,0x28,0x44,0x00,
-	0x0C,0x50,0x50,0x3C,0x00,0x00,// x y		120,121
-	0x44,0x64,0x54,0x4C,0x44,0x00,
-	0x08,0x36,0x41,0x00,0x00,0x00,// z {		122,123
-	0x7F,0x00,0x00,0x00,0x00,0x00,
-	0x41,0x36,0x08,0x00,0x00,0x00,// | }		124,125
-	0x08,0x2A,0x1C,0x08,0x00,0x00,
-	0x08,0x1C,0x2A,0x08,0x00,0x00,// -> <-		126,127
-	0x14,0x36,0x77,0x36,0x14,0x00 };//			128
-
 Screen *wpdW21_spi::DrvDrawString(void *driverHandlerPtr, char *string, int x, int y, int foreColor, int inkColor) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
-	return DrvDrawStringBox(driverHandlerPtr, drv->box, string, x, y, drv->terminalMode, drv->wordWrap, foreColor, inkColor);
+	return DrvDrawStringClip(driverHandlerPtr, drv->box, string, x, y, drv->terminalMode, drv->wordWrap, foreColor, inkColor);
 }
 
-Screen *wpdW21_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
+Screen *wpdW21_spi::DrvDrawStringClip(void *driverHandlerPtr, struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	box_s box__;
 	if(box) {
@@ -980,11 +946,11 @@ Screen *wpdW21_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, 
 	int CharCnt = 0;
 	bool ulOpaque = false;
 #ifdef __AVR_MEGA__
-	chWidth = pgm_read_byte(&CharTable6x8[2]);
-	chHeight = pgm_read_byte(&CharTable6x8[3]);
+	chWidth = pgm_read_byte(&fontTable6x8[2]);
+	chHeight = pgm_read_byte(&fontTable6x8[3]);
 #else // !__AVR_MEGA__
-	chWidth = CharTable6x8[2];
-	chHeight = CharTable6x8[3];
+	chWidth = fontTable6x8[2];
+	chHeight = fontTable6x8[3];
 #endif // __AVR_MEGA__
 	do {
 		char Char = *pcString;
@@ -992,11 +958,11 @@ Screen *wpdW21_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, 
 			return (Screen *)driverHandlerPtr;
 		}
 #ifdef __AVR_MEGA__
-		CharPtr = ((Char - pgm_read_byte(&CharTable6x8[4])) * chWidth) + pgm_read_byte(&CharTable6x8[0]);
-		if(Char < pgm_read_byte(&CharTable6x8[4]) || Char > pgm_read_byte(&CharTable6x8[5]))
+		CharPtr = ((Char - pgm_read_byte(&fontTable6x8[4])) * chWidth) + pgm_read_byte(&fontTable6x8[0]);
+		if(Char < pgm_read_byte(&fontTable6x8[4]) || Char > pgm_read_byte(&fontTable6x8[5]))
 #else // !__AVR_MEGA__
-		CharPtr = ((Char - CharTable6x8[4]) * chWidth) + CharTable6x8[0];
-		if (Char < CharTable6x8[4] || Char > CharTable6x8[5])
+		CharPtr = ((Char - fontTable6x8[4]) * chWidth) + fontTable6x8[0];
+		if (Char < fontTable6x8[4] || Char > fontTable6x8[5])
 #endif // __AVR_MEGA__
 		{
 			//chWidth_Tmp = chWidth;
@@ -1007,9 +973,9 @@ Screen *wpdW21_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, 
 			if (!terminalMode) {
 				for (Tmp = 1; Tmp < chWidth; Tmp++) {
 #ifdef __AVR_MEGA__
-					Temp = pgm_read_byte(&CharTable6x8[Tmp + CharPtr]);
+					Temp = pgm_read_byte(&fontTable6x8[Tmp + CharPtr]);
 #else
-					Temp = CharTable6x8[Tmp + CharPtr];
+					Temp = fontTable6x8[Tmp + CharPtr];
 #endif
 					if (Temp == 0)
 						break;
@@ -1028,18 +994,18 @@ Screen *wpdW21_spi::DrvDrawStringBox(void *driverHandlerPtr, struct box_s *box, 
 					int YY = 0;
 					for (XX = 0; XX < Tmp; XX++) {
 #ifdef __AVR_MEGA__
-						Temp = pgm_read_byte(&CharTable6x8[XX + CharPtr]);
+						Temp = pgm_read_byte(&fontTable6x8[XX + CharPtr]);
 #else // !__AVR_MEGA__
-						Temp = CharTable6x8[XX + CharPtr];
+						Temp = fontTable6x8[XX + CharPtr];
 #endif // __AVR_MEGA__
 						for (YY = 0; YY < chHeight; YY++) {
 							if (Temp & 0x1)
 							{
-								DrvDrawPixelBox(driverHandlerPtr, &box__,
+								DrvDrawPixelClip(driverHandlerPtr, &box__,
 									XX + Cursor_X, YY + Cursor_Y, inkColor);
 							} else {
 								if (ulOpaque)
-									DrvDrawPixelBox(driverHandlerPtr, &box__,
+									DrvDrawPixelClip(driverHandlerPtr, &box__,
 										XX + Cursor_X, YY + Cursor_Y, foreColor);
 							}
 							Temp = Temp >> 1;

@@ -21,11 +21,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if __AVR_MEGA__
 #include <avr/pgmspace.h>
+#endif
 
 #include "screen.h"
 
 #include "../util/math.h"
+#include "font6x8.h"
 
 Screen *defaultScreen = NULL;
 
@@ -62,6 +65,9 @@ void Screen::idle() {
 void Screen::triggerRefresh() {
 	TriggerRefreshPtr(DriverPtr);
 }
+void Screen::triggerUpdate() {
+	TriggerUpdatePtr(DriverPtr);
+}
 int Screen::getX() {
 	return GetXPtr(DriverPtr);
 }
@@ -80,26 +86,26 @@ Screen *Screen::drvSetContrast(byte cont) {
 Screen *Screen::drvDrawPixel(int x, int y, int color) {
 	return DrvDrawPixelPtr(DriverPtr, x, y, color);
 }
-Screen *Screen::drvDrawPixelBox(struct box_s *box, int x, int y, int color) {
-	return DrvDrawPixelBoxPtr(DriverPtr, box, x, y, color);
+Screen *Screen::drvDrawPixelClip(struct box_s *box, int x, int y, int color) {
+	return DrvDrawPixelClipPtr(DriverPtr, box, x, y, color);
 }
 Screen *Screen::drvDrawRectangle(int x, int y, int x_size, int y_size, bool fill, int color) {
 	return DrvDrawRectanglePtr(DriverPtr, x, y, x_size, y_size, fill, color);
 }
-Screen *Screen::drvDrawRectangleBox(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
-	return DrvDrawRectangleBoxPtr(DriverPtr, box, x, y, x_size, y_size, fill, color);
+Screen *Screen::drvDrawRectangleClip(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color) {
+	return DrvDrawRectangleClipPtr(DriverPtr, box, x, y, x_size, y_size, fill, color);
 }
 Screen *Screen::drvDrawHLine(int x1, int x2, int y, byte width, int color) {
 	return DrvDrawHLinePtr(DriverPtr, x1, x2, y, width, color);
 }
-Screen *Screen::drvDrawHLineBox(struct box_s *box, int x1, int x2, int y, byte width, int color) {
-	return DrvDrawHLineBoxPtr(DriverPtr, box, x1, x2, y, width, color);
+Screen *Screen::drvDrawHLineClip(struct box_s *box, int x1, int x2, int y, byte width, int color) {
+	return DrvDrawHLineClipPtr(DriverPtr, box, x1, x2, y, width, color);
 }
 Screen *Screen::drvDrawVLine(int y1, int y2, int x, byte width, int color) {
 	return DrvDrawVLinePtr(DriverPtr, y1, y2, x, width, color);
 }
-Screen *Screen::drvDrawVLineBox(struct box_s *box, int y1, int y2, int x, byte width, int color) {
-	return DrvDrawVLineBoxPtr(DriverPtr, box, y1, y2, x, width, color);
+Screen *Screen::drvDrawVLineClip(struct box_s *box, int y1, int y2, int x, byte width, int color) {
+	return DrvDrawVLineClipPtr(DriverPtr, box, y1, y2, x, width, color);
 }
 Screen *Screen::drvClear(int color) {
 	return DrvClearPtr(DriverPtr, color);
@@ -107,8 +113,8 @@ Screen *Screen::drvClear(int color) {
 Screen *Screen::drvDrawString(char *string, int x, int y, int foreColor, int inkColor) {
 	return DrvDrawStringPtr(DriverPtr, string, x, y, foreColor, inkColor);
 }
-Screen *Screen::drvDrawStringBox(struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
-	return DrvDrawStringBoxPtr(DriverPtr, box, string, x, y, terminalMode, wordWrap, foreColor, inkColor);
+Screen *Screen::drvDrawStringClip(struct box_s *box, char *string, int x, int y, bool terminalMode, bool wordWrap, int foreColor, int inkColor) {
+	return DrvDrawStringClipPtr(DriverPtr, box, string, x, y, terminalMode, wordWrap, foreColor, inkColor);
 }
 
 //#######################################################################################
@@ -138,24 +144,24 @@ Screen *Screen::drawCircle(struct box_s *box, signed int x, signed int y, unsign
 		Tmp8 = y - b;
 		if (fill) {
 			if (_Tmp7 != Tmp7) {
-				drvDrawHLineBox(box, Tmp2, Tmp1 - Tmp2, Tmp7, 1, color);
-				drvDrawHLineBox(box, Tmp2, Tmp1 - Tmp2, Tmp8, 1, color);
+				drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp7, 1, color);
+				drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp8, 1, color);
 			}
 			if (_Tmp5 != Tmp5) {
-				drvDrawHLineBox(box, Tmp4, Tmp3 - Tmp4, Tmp5, 1, color);
-				drvDrawHLineBox(box, Tmp4, Tmp3 - Tmp4, Tmp6, 1, color);
+				drvDrawHLineClip(box, Tmp4, Tmp3 - Tmp4, Tmp5, 1, color);
+				drvDrawHLineClip(box, Tmp4, Tmp3 - Tmp4, Tmp6, 1, color);
 			}
 			_Tmp5 = Tmp5;
 			_Tmp7 = Tmp7;
 		} else {
-			drvDrawPixelBox(box, Tmp1, Tmp7, color);
-			drvDrawPixelBox(box, Tmp3, Tmp5, color);
-			drvDrawPixelBox(box, Tmp2, Tmp7, color);
-			drvDrawPixelBox(box, Tmp4, Tmp5, color);
-			drvDrawPixelBox(box, Tmp3, Tmp6, color);
-			drvDrawPixelBox(box, Tmp1, Tmp8, color);
-			drvDrawPixelBox(box, Tmp2, Tmp8, color);
-			drvDrawPixelBox(box, Tmp4, Tmp6, color);
+			drvDrawPixelClip(box, Tmp1, Tmp7, color);
+			drvDrawPixelClip(box, Tmp3, Tmp5, color);
+			drvDrawPixelClip(box, Tmp2, Tmp7, color);
+			drvDrawPixelClip(box, Tmp4, Tmp5, color);
+			drvDrawPixelClip(box, Tmp3, Tmp6, color);
+			drvDrawPixelClip(box, Tmp1, Tmp8, color);
+			drvDrawPixelClip(box, Tmp2, Tmp8, color);
+			drvDrawPixelClip(box, Tmp4, Tmp6, color);
 		}
 
 		if (P < 0)
@@ -193,7 +199,7 @@ Screen *Screen::drawLine(struct box_s *box, signed int X1, signed int Y1, signed
 			Dy = -Dy;
 			TwoDy = -TwoDy;
 		}
-		drvDrawPixelBox(box, X1, Y1, color);
+		drvDrawPixelClip(box, X1, Y1, color);
 		if ((Dx != 0) || (Dy != 0)) {
 			if (Dy <= Dx) {
 				twoDxAccumulatedError = 0;
@@ -204,7 +210,7 @@ Screen *Screen::drawLine(struct box_s *box, signed int X1, signed int Y1, signed
 						currentY += Yinc;
 						twoDxAccumulatedError -= TwoDx;
 					}
-					drvDrawPixelBox(box, currentX, currentY, color);
+					drvDrawPixelClip(box, currentX, currentY, color);
 				} while (currentX != X2);
 			}
 			else {
@@ -216,7 +222,7 @@ Screen *Screen::drawLine(struct box_s *box, signed int X1, signed int Y1, signed
 						currentX += Xinc;
 						twoDyAccumulatedError -= TwoDy;
 					}
-					drvDrawPixelBox(box, currentX, currentY, color);
+					drvDrawPixelClip(box, currentX, currentY, color);
 				} while (currentY != Y2);
 			}
 		}
@@ -269,7 +275,7 @@ Screen *Screen::drawLine(struct box_s *box, signed int X1, signed int Y1, signed
 
 					temp = dx * X1 + dy * (Y1 + j); // Use more RAM to increase speed
 					if (temp + c1 >= -half_width_square && temp + c2 <= half_width_square)
-						drvDrawPixelBox(box, X1, Y1 + j, color);
+						drvDrawPixelClip(box, X1, Y1 + j, color);
 				}
 #endif
 				if (P < 0) {
@@ -302,7 +308,7 @@ Screen *Screen::drawLine(struct box_s *box, signed int X1, signed int Y1, signed
 
 					temp = dx * X1 + dy * (Y1 + j); // Use more RAM to increase speed
 					if (temp + c1 >= 0 && temp + c2 <= 0)
-						drvDrawPixelBox(box, X1 + j, Y1, color);
+						drvDrawPixelClip(box, X1 + j, Y1, color);
 				}
 #endif
 			}
@@ -319,13 +325,13 @@ void Screen::elipseplot(struct box_s *box, int xc, int yc,
 	int Tmp3 = yc + y;
 	int Tmp4 = yc - y;
 	if (fill) {
-		drvDrawHLineBox(box, Tmp2, Tmp1 - Tmp2, Tmp3, 1, color);
-		drvDrawHLineBox(box, Tmp2, Tmp1 - Tmp2, Tmp4, 1, color);
+		drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp3, 1, color);
+		drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp4, 1, color);
 	} else {
-		drvDrawPixelBox(box, (unsigned int) (Tmp1), (unsigned int) (Tmp3), color);
-		drvDrawPixelBox(box, (unsigned int) (Tmp2), (unsigned int) (Tmp3), color);
-		drvDrawPixelBox(box, (unsigned int) (Tmp1), (unsigned int) (Tmp4), color);
-		drvDrawPixelBox(box, (unsigned int) (Tmp2), (unsigned int) (Tmp4), color);
+		drvDrawPixelClip(box, (unsigned int) (Tmp1), (unsigned int) (Tmp3), color);
+		drvDrawPixelClip(box, (unsigned int) (Tmp2), (unsigned int) (Tmp3), color);
+		drvDrawPixelClip(box, (unsigned int) (Tmp1), (unsigned int) (Tmp4), color);
+		drvDrawPixelClip(box, (unsigned int) (Tmp2), (unsigned int) (Tmp4), color);
 	}
 }
 //----------------------------------------------------------------------------------------
@@ -497,7 +503,7 @@ void Screen::drawMsgAndProgress(const char *text_P, char *text_R, long progress_
 	int32_t bar_len = math::intToPercent(getX(), progress_min, progress_max, progress_value);
 	drvClear(0);
 	if(bar_len) {
-		drvDrawRectangleBox(NULL, 0, 32, bar_len, 8, true, true);
+		drvDrawRectangleClip(NULL, 0, 32, bar_len, 8, true, true);
 	}
 	drvDrawString(buf, 0, 8, 0, -1);
 }
@@ -654,90 +660,90 @@ Screen *Screen::drawChar4x6(struct box_s *box, int x, int y,  char c, int foreCo
 #endif
 	int fg = inkColor;
 	if(foreColor != inkColor) {
-		drvDrawRectangleBox(box, x, y, 4, 6, true, foreColor);
+		drvDrawRectangleClip(box, x, y, 4, 6, true, foreColor);
 	}
 	if (data2 & 1)	// Descender e.g. j, g
 	{
 		y++;
 
 		if(data1 & 0x80)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x40)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data1 & 0x20)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data1 & 0x10)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x8)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data1 & 0x4)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data1 & 0x2)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x1)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x2)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data2 & 0x80)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data2 & 0x40)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x20)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data2 & 0x10)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data2 & 0x8)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x4)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 	} else {
 		if (data1 & 0x80)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x40)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data1 & 0x20)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data1 & 0x10)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x8)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data1 & 0x4)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data1 & 0x2)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data1 & 0x1)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x2)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data2 & 0x80)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data2 & 0x40)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x20)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 
 		if (data2 & 0x10)
-			drvDrawPixelBox(box ,x, y, fg);
+			drvDrawPixelClip(box ,x, y, fg);
 		if (data2 & 0x8)
-			drvDrawPixelBox(box ,x + 1, y, fg);
+			drvDrawPixelClip(box ,x + 1, y, fg);
 		if (data2 & 0x4)
-			drvDrawPixelBox(box ,x + 2, y, fg);
+			drvDrawPixelClip(box ,x + 2, y, fg);
 		y++;
 	}
 	return this;
@@ -865,113 +871,6 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
     } while (1);
 }
 
-/*#####################################################*/
-#ifdef __AVR_MEGA__
-#include <avr/pgmspace.h>
-static const uint8_t drawCharTable6x8[] PROGMEM =
-#else
-static const uint8_t drawCharTable6x8[] =
-#endif
-{
-	6                          ,0          ,6          ,8          ,32            ,128,
-	/*  OffsetOfBeginingCharTable  ,0=Y-X|1=X-X,X-Dimension,Y-Dimension,BeginAsciiChar,EndAsciiChar*/
-	0x00,0x00,0x00,0x00,0x00,0x00,
-	0x5F,0x00,0x00,0x00,0x00,0x00,//   !		32,33
-	0x07,0x00,0x07,0x00,0x00,0x00,
-	0x14,0x7F,0x14,0x7F,0x14,0x00,// " #		34,35
-	0x24,0x2A,0x7F,0x2A,0x12,0x00,
-	0x23,0x13,0x08,0x64,0x62,0x00,// 0x %		36,37
-	0x36,0x49,0x55,0x22,0x50,0x00,
-	0x05,0x03,0x00,0x00,0x00,0x00,// & '		38,39
-	0x1C,0x22,0x41,0x00,0x00,0x00,
-	0x41,0x22,0x1C,0x00,0x00,0x00,// ( )		40,41
-	0x08,0x2A,0x1C,0x2A,0x08,0x00,
-	0x08,0x08,0x3E,0x08,0x08,0x00,// * +		42,43
-	0x50,0x30,0x00,0x00,0x00,0x00,
-	0x08,0x08,0x08,0x00,0x00,0x00,// , -		44,45
-	0x30,0x30,0x00,0x00,0x00,0x00,
-	0x20,0x10,0x08,0x04,0x02,0x00,// . /		46,47
-	0x3E,0x51,0x49,0x45,0x3E,0x00,
-	0x42,0x7F,0x40,0x00,0x00,0x00,// 0 1		48,49
-	0x42,0x61,0x51,0x49,0x46,0x00,
-	0x21,0x41,0x45,0x4B,0x31,0x00,// 2 3		50,51
-	0x18,0x14,0x12,0x7F,0x10,0x00,
-	0x27,0x45,0x45,0x45,0x39,0x00,// 4 5		52,53
-	0x3C,0x4A,0x49,0x49,0x30,0x00,
-	0x01,0x71,0x09,0x05,0x03,0x00,// 6 7		54,55
-	0x36,0x49,0x49,0x49,0x36,0x00,
-	0x06,0x49,0x49,0x29,0x1E,0x00,// 8 9		56,57
-	0x36,0x00,0x00,0x00,0x00,0x00,
-	0x56,0x36,0x00,0x00,0x00,0x00,// : ;		58,59
-	0x08,0x14,0x22,0x41,0x00,0x00,
-	0x14,0x14,0x14,0x00,0x00,0x00,// < =		60,61
-	0x41,0x22,0x14,0x08,0x00,0x00,
-	0x02,0x01,0x51,0x09,0x06,0x00,// > ?		62,63
-	0x32,0x49,0x79,0x41,0x3E,0x00,
-	0x7E,0x11,0x11,0x7E,0x00,0x00,// @ A		64,65
-	0x7F,0x49,0x49,0x36,0x00,0x00,
-	0x3E,0x41,0x41,0x22,0x00,0x00,// B C		66,67
-	0x7F,0x41,0x22,0x1C,0x00,0x00,
-	0x7F,0x49,0x49,0x41,0x00,0x00,// D E		68,69
-	0x7F,0x09,0x09,0x01,0x00,0x00,
-	0x3E,0x41,0x51,0x32,0x00,0x00,// F G		70,71
-	0x7F,0x08,0x08,0x7F,0x00,0x00,
-	0x41,0x7F,0x41,0x00,0x00,0x00,// H I		72,73
-	0x20,0x40,0x41,0x3F,0x01,0x00,
-	0x7F,0x08,0x14,0x22,0x41,0x00,// J K		74,75
-	0x7F,0x40,0x40,0x00,0x00,0x00,
-	0x7F,0x02,0x04,0x02,0x7F,0x00,// L M		76,77
-	0x7F,0x04,0x08,0x10,0x7F,0x00,
-	0x3E,0x41,0x41,0x3E,0x00,0x00,// N O		78,79
-	0x7F,0x09,0x09,0x06,0x00,0x00,
-	0x3E,0x41,0x51,0x21,0x5E,0x00,// P Q		80,81
-	0x7F,0x19,0x29,0x46,0x00,0x00,
-	0x46,0x49,0x49,0x31,0x00,0x00,// R S		82,83
-	0x01,0x7F,0x01,0x00,0x00,0x00,
-	0x3F,0x40,0x40,0x3F,0x00,0x00,// T U		84,85
-	0x1F,0x20,0x40,0x20,0x1F,0x00,
-	0x7F,0x20,0x18,0x20,0x7F,0x00,// V W		86,87
-	0x63,0x14,0x08,0x14,0x63,0x00,
-	0x03,0x04,0x78,0x04,0x03,0x00,// X Y		88,89
-	0x61,0x51,0x49,0x45,0x43,0x00,
-	0x7F,0x41,0x41,0x00,0x00,0x00,// Z [		90,91
-	0x02,0x04,0x08,0x10,0x20,0x00,
-	0x41,0x41,0x7F,0x00,0x00,0x00,// \ ]		92,93
-	0x04,0x02,0x01,0x02,0x04,0x00,
-	0x40,0x40,0x40,0x00,0x00,0x00,// ^ _		94,95
-	0x01,0x02,0x04,0x00,0x00,0x00,
-	0x20,0x54,0x54,0x78,0x00,0x00,// ` a		96,97
-	0x7F,0x48,0x44,0x38,0x00,0x00,
-	0x38,0x44,0x44,0x00,0x00,0x00,// b c		98,99
-	0x38,0x44,0x48,0x7F,0x00,0x00,
-	0x38,0x54,0x54,0x18,0x00,0x00,// d e		100,101
-	0x08,0x7E,0x09,0x01,0x00,0x00,
-	0x08,0x14,0x54,0x3C,0x00,0x00,// f g		102,103
-	0x7F,0x08,0x04,0x78,0x00,0x00,
-	0x44,0x7D,0x40,0x00,0x00,0x00,// h i		104,105
-	0x20,0x40,0x44,0x3D,0x00,0x00,
-	0x7F,0x10,0x28,0x44,0x00,0x00,// j k		106,107
-	0x41,0x7F,0x40,0x00,0x00,0x00,
-	0x7C,0x04,0x18,0x04,0x78,0x00,// l m		108,109
-	0x7C,0x08,0x04,0x78,0x00,0x00,
-	0x38,0x44,0x44,0x38,0x00,0x00,// n o		110,111
-	0x7C,0x14,0x14,0x08,0x00,0x00,
-	0x08,0x14,0x18,0x7C,0x00,0x00,// p q		112,113
-	0x7C,0x08,0x04,0x08,0x00,0x00,
-	0x48,0x54,0x54,0x20,0x00,0x00,// r s		114,115
-	0x04,0x3F,0x44,0x40,0x00,0x00,
-	0x3C,0x40,0x20,0x7C,0x00,0x00,// t u		116,117
-	0x1C,0x20,0x40,0x20,0x1C,0x00,
-	0x3C,0x40,0x30,0x40,0x3C,0x00,// v w		118,119
-	0x44,0x28,0x10,0x28,0x44,0x00,
-	0x0C,0x50,0x50,0x3C,0x00,0x00,// x y		120,121
-	0x44,0x64,0x54,0x4C,0x44,0x00,
-	0x08,0x36,0x41,0x00,0x00,0x00,// z {		122,123
-	0x7F,0x00,0x00,0x00,0x00,0x00,
-	0x41,0x36,0x08,0x00,0x00,0x00,// | }		124,125
-	0x08,0x2A,0x1C,0x08,0x00,0x00,
-	0x08,0x1C,0x2A,0x08,0x00,0x00,// -> <-		126,127
-	0x14,0x36,0x77,0x36,0x14,0x00 };//			128
 
 static inline char getCharHeight6x8() {
 	return 6;
@@ -1039,11 +938,11 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 	int16_t CharCnt = 0;
 	bool ulOpaque = false;
 #ifdef __AVR_MEGA__
-	chWidth = pgm_read_byte(&drawCharTable6x8[2]);
-	chHeight = pgm_read_byte(&drawCharTable6x8[3]);
+	chWidth = pgm_read_byte(&fontTable6x8[2]);
+	chHeight = pgm_read_byte(&fontTable6x8[3]);
 #else
-	chWidth = drawCharTable6x8[2];
-	chHeight = drawCharTable6x8[3];
+	chWidth = fontTable6x8[2];
+	chHeight = fontTable6x8[3];
 #endif
 	do {
 		int8_t Char = *pcString;
@@ -1051,11 +950,11 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 			return this;
 		}
 #ifdef __AVR_MEGA__
-		CharPtr = ((Char - pgm_read_byte(&drawCharTable6x8[4])) * chWidth) + pgm_read_byte(&drawCharTable6x8[0]);
-		if(Char < pgm_read_byte(&drawCharTable6x8[4]) || Char > pgm_read_byte(&drawCharTable6x8[5]))
+		CharPtr = ((Char - pgm_read_byte(&fontTable6x8[4])) * chWidth) + pgm_read_byte(&fontTable6x8[0]);
+		if(Char < pgm_read_byte(&fontTable6x8[4]) || Char > pgm_read_byte(&fontTable6x8[5]))
 #else
-		CharPtr = ((Char - drawCharTable6x8[4]) * chWidth) + drawCharTable6x8[0];
-		if (Char < drawCharTable6x8[4] || Char > drawCharTable6x8[5])
+		CharPtr = ((Char - fontTable6x8[4]) * chWidth) + fontTable6x8[0];
+		if (Char < fontTable6x8[4] || Char > fontTable6x8[5])
 #endif
 		{
 			//chWidth_Tmp = chWidth;
@@ -1066,9 +965,9 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 			if (!terminalMode) {
 				for (Tmp = 1; Tmp < chWidth; Tmp++) {
 #ifdef __AVR_MEGA__
-					Temp = pgm_read_byte(&drawCharTable6x8[Tmp + CharPtr]);
+					Temp = pgm_read_byte(&fontTable6x8[Tmp + CharPtr]);
 #else
-					Temp = drawCharTable6x8[Tmp + CharPtr];
+					Temp = fontTable6x8[Tmp + CharPtr];
 #endif
 					if (Temp == 0)
 					break;
@@ -1087,18 +986,18 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 					int16_t YY = 0;
 					for (XX = 0; XX < Tmp; XX++) {
 #ifdef __AVR_MEGA__
-						Temp = pgm_read_byte(&drawCharTable6x8[XX + CharPtr]);
+						Temp = pgm_read_byte(&fontTable6x8[XX + CharPtr]);
 #else
-						Temp = drawCharTable6x8[XX + CharPtr];
+						Temp = fontTable6x8[XX + CharPtr];
 #endif
 						for (YY = 0; YY < chHeight; YY++) {
 							if (Temp & 0x1) {
-								defaultScreen->drvDrawPixelBox(&box__,
+								defaultScreen->drvDrawPixelClip(&box__,
 										XX + Cursor_X, YY + Cursor_Y, inkColor);
 							}
 							else {
 								if(foreColor != inkColor)
-									defaultScreen->drvDrawPixelBox(&box__,
+									defaultScreen->drvDrawPixelClip(&box__,
 											XX + Cursor_X, YY + Cursor_Y, foreColor);
 							}
 							Temp = Temp >> 1;
