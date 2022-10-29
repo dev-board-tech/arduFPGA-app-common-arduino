@@ -22,5 +22,6 @@
 #include "util/unions.h"
 #include "util/util-fat.h"
 #include "util/util.h"
+#include "web/webBrowser.h"
 
 #endif

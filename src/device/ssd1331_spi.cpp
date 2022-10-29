@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "ssd1331_spi.h"
-#include "spi.h"
 #include "font6x8.h"
 #include "SPI.h"
 
