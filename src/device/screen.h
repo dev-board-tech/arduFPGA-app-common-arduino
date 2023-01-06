@@ -163,6 +163,10 @@ public:
 	gfxString *drawStringWindowed6x8(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
 	gfxString *drawStringWindowed6x8(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
 
+	gfxString *setEdgeTouch(unsigned char edgeTouch) {
+		this->edgeTouch = edgeTouch;
+		return this;
+	}
 	gfxString *setWordWrap(bool wordWrap) {
 		this->wordWrap = wordWrap;
 		return this;

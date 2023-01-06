@@ -1,6 +1,7 @@
 #ifndef __WEB_BROWSER_H__
 #define __WEB_BROWSER_H__
 
+#if defined(ESP8266) || defined(ESP32)
 //#include "def.h"
 #if USE_HTTPS
 #include <ESP8266WebServerSecure.h>
@@ -31,5 +32,6 @@ public:
 private:
   String path;
 };
+#endif // !defined(ESP8266) || defined(ESP32)
 
 #endif

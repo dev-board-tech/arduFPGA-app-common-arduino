@@ -290,7 +290,7 @@ int ssd1306_spi::GetY(void *driverHandlerPtr) {
 
 void transfer(ssd1306_spi *drv, int len) {
 	for( int i = 0; i < len; i++) {
-		drv->spi->transfer(drv->buf[i]);
+		spi->transfer(drv->buf[i]);
 	}
 }
 
@@ -429,7 +429,7 @@ Screen *ssd1306_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *
 				WrCmd(LineCnt >> 3);
 				SPI_SSD1306_DATA();
 				spi->transfer((reverseColor ^ (color ? 1 : 0)) ? 0xFF : 0x00);
-				SPI_SSD1306_CS_DEASSERT();
+				SPI_SSD1306_CS_DEASSERT(drv->CsPin);
 			}
 		}
 #endif // SSD1306_USE_BUF
@@ -563,6 +563,8 @@ Screen *ssd1306_spi::DrvDrawVLineClip(void *driverHandlerPtr, struct box_s *box,
 	return (Screen *)driverHandlerPtr;
 }
 
+/*#####################################################*/
+
 Screen *ssd1306_spi::DrvClear(void *driverHandlerPtr, int color) {
 	ssd1306_spi *drv = (ssd1306_spi *)driverHandlerPtr;
 	//byte *_buf = buf;
@@ -681,7 +683,7 @@ Screen *ssd1306_spi::DrvDrawStringClip(void *driverHandlerPtr, struct box_s *box
 						}
 #else // !SSD1306_USE_BUF
 						if(XX + Cursor_X < box__.x_max) {
-							SPI_SSD1306_CS_ASSERT();
+							SPI_SSD1306_CS_ASSERT(drv->CsPin);
 							WrCmd(0x21);
 							WrCmd(XX + Cursor_X);
 							WrCmd(XX + Cursor_X);
@@ -690,7 +692,7 @@ Screen *ssd1306_spi::DrvDrawStringClip(void *driverHandlerPtr, struct box_s *box
 							WrCmd(Cursor_Y >> 3);
 							SPI_SSD1306_DATA();
 							spi->transfer((reverseColor ^ (inkColor ? 1 : 0)) ? Temp : ~Temp);
-							SPI_SSD1306_CS_DEASSERT();
+							SPI_SSD1306_CS_DEASSERT(drv->CsPin);
 						}
 #endif // SSD1306_USE_BUF
 					}

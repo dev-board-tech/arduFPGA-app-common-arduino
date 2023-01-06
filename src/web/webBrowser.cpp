@@ -1,3 +1,5 @@
+#if defined(ESP8266) || defined(ESP32)
+
 #include "webBrowser.h"
 
 #include <time.h>
@@ -181,4 +183,5 @@ void webBrowser::read(ESP8266WebServer *server) {
   server->client().stop();
 }
 
+#endif // !defined(ESP8266) || defined(ESP32)
 
