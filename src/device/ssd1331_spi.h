@@ -24,7 +24,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#if !defined(QT_WIDGETS_LIB)
 #include <SPI.h>
+#endif
 #include <include/global.h>
 #include "../device/screen.h"
 #include "../include/global.h"

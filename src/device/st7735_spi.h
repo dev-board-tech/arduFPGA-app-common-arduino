@@ -22,8 +22,9 @@
 #ifndef ST7735_H_
 #define ST7735_H_
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
-
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include "../device/screen.h"
@@ -237,6 +238,9 @@
 #define ST7735_GMCTRP1 0xE0
 #define ST7735_GMCTRN1 0xE1
 
+#if defined(QT_WIDGETS_LIB)
+typedef char SPIClass;
+#endif
 
 class st7735_spi : public Screen {
 public:

@@ -20,17 +20,24 @@
 
 #include "wpdw21_spi.h"
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
+#include <SPI.h>
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SPI.h>
 #include "../include/global.h"
 #include "font6x8.h"
+#if !defined(QT_WIDGETS_LIB)
 #include "SPI.h"
+#else
+#define LOW     0
+#define HIGH    1
+#endif
 
 #if __AVR_MEGA__
 #include <avr/pgmspace.h>
@@ -103,19 +110,27 @@ static const unsigned char lut_b[] = {
 };
 
 static inline void SPI_WDPW21_CS_ASSERT(uint8_t CsPin) {
-	digitalWrite(CsPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(CsPin, LOW);
+#endif
 }
 
 static inline void SPI_WDPW21_CS_DEASSERT(uint8_t CsPin) {
-	digitalWrite(CsPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(CsPin, HIGH);
+#endif
 }
 
 static inline void SPI_WDPW21_COMMAND(uint8_t DcPin) {
-	digitalWrite(DcPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcPin, LOW);
+#endif
 }
 
 static inline void SPI_WDPW21_DATA(uint8_t DcPin) {
-	digitalWrite(DcPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcPin, HIGH);
+#endif
 }
 
 wpdW21_spi::wpdW21_spi(SPIClass *Spi, int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin, uint8_t busy) {
@@ -126,7 +141,8 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, int bufSize, uint8_t csPin, uint8_t dcPin,
 	CsPin = csPin;
 	DcPin = dcPin;
 	RstPin = rstPin;
-	spi = Spi;
+#if !defined(QT_WIDGETS_LIB)
+    spi = Spi;
 	digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
 	digitalWrite(rstPin, HIGH);
@@ -134,6 +150,7 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, int bufSize, uint8_t csPin, uint8_t dcPin,
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -148,7 +165,8 @@ wpdW21_spi::wpdW21_spi(int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin
 	DcPin = dcPin;
 	RstPin = rstPin;
 	Busy = busy;
-	spi = &SPI;
+#if !defined(QT_WIDGETS_LIB)
+    spi = &SPI;
 	digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
 	digitalWrite(rstPin, HIGH);
@@ -156,6 +174,7 @@ wpdW21_spi::wpdW21_spi(int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -170,7 +189,8 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, uint8_t csPin, uint8_t dcPin, uint8_t rstP
 	DcPin = dcPin;
 	RstPin = rstPin;
 	Busy = busy;
-	spi = Spi;
+#if !defined(QT_WIDGETS_LIB)
+    spi = Spi;
 	digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
 	digitalWrite(rstPin, HIGH);
@@ -178,6 +198,7 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, uint8_t csPin, uint8_t dcPin, uint8_t rstP
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -193,7 +214,8 @@ wpdW21_spi::wpdW21_spi(uint8_t csPin, uint8_t dcPin, uint8_t rstPin, uint8_t bus
 	DcPin = dcPin;
 	RstPin = rstPin;
 	Busy = busy;
-	spi = &SPI;
+#if !defined(QT_WIDGETS_LIB)
+    spi = &SPI;
 	digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
 	digitalWrite(rstPin, HIGH);
@@ -201,6 +223,7 @@ wpdW21_spi::wpdW21_spi(uint8_t csPin, uint8_t dcPin, uint8_t rstPin, uint8_t bus
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -213,7 +236,8 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, void *vBuf, uint8_t csPin, uint8_t dcPin, 
 	DcPin = dcPin;
 	RstPin = rstPin;
 	Busy = busy;
-	spi = Spi;
+#if !defined(QT_WIDGETS_LIB)
+    spi = Spi;
 	setBuf(vBuf);
 	digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
@@ -222,6 +246,7 @@ wpdW21_spi::wpdW21_spi(SPIClass *Spi, void *vBuf, uint8_t csPin, uint8_t dcPin, 
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -232,15 +257,17 @@ wpdW21_spi::wpdW21_spi(void *vBuf, uint8_t csPin, uint8_t dcPin, uint8_t rstPin,
 	DcPin = dcPin;
 	RstPin = rstPin;
 	Busy = busy;
-	spi = &SPI;
 	setBuf(vBuf);
-	digitalWrite(csPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    spi = &SPI;
+    digitalWrite(csPin, HIGH);
 	digitalWrite(dcPin, HIGH);
 	digitalWrite(rstPin, HIGH);
 	pinMode(csPin, OUTPUT);
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
 	pinMode(busy, INPUT);
+#endif
 	setDefault();
 	deriverInit();
 	drvClear(false);
@@ -282,7 +309,8 @@ void wpdW21_spi::deriverInit() {
 }
 
 void wpdW21_spi::Idle(void *driverHandlerPtr) {
-	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
+#if !defined(QT_WIDGETS_LIB)
+    wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	switch(drv->state) {
 	case drv->PWR_ON_REFRESH:
 		if(drv->lcd_chkstatus_nonblocking()) {
@@ -439,6 +467,7 @@ void wpdW21_spi::Idle(void *driverHandlerPtr) {
 		drv->refreshCnt = 0;
 		drv->state = drv->PWR_ON_REFRESH;
 	}
+#endif
 }
 
 void wpdW21_spi::TriggerRefresh(void *driverHandlerPtr) {
@@ -476,10 +505,12 @@ void wpdW21_spi::part_lut_bw() {
 Screen *wpdW21_spi::Init(void *driverHandlerPtr) {
 	wpdW21_spi *drv = (wpdW21_spi *)driverHandlerPtr;
 	drv->deriverInit();
-	digitalWrite(drv->RstPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(drv->RstPin, LOW);
 	delay(2);
 	digitalWrite(drv->RstPin, HIGH);
 	delay(10);
+#endif
 	drv->WrCmd(0xD2);
 	SPI_WDPW21_DATA(drv->DcPin);
 	drv->WrData(0x3F);
@@ -542,14 +573,18 @@ Screen *wpdW21_spi::Init(void *driverHandlerPtr) {
 void wpdW21_spi::WrCmd(byte cmd) {
 	SPI_WDPW21_COMMAND(DcPin);
 	SPI_WDPW21_CS_ASSERT(CsPin);
-	spi->transfer(cmd);
+#if !defined(QT_WIDGETS_LIB)
+    spi->transfer(cmd);
+#endif
 	SPI_WDPW21_CS_DEASSERT(CsPin);
 }
 
 void wpdW21_spi::WrData(byte data) {
 	SPI_WDPW21_DATA(DcPin);
 	SPI_WDPW21_CS_ASSERT(CsPin);
-	spi->transfer(data);
+#if !defined(QT_WIDGETS_LIB)
+    spi->transfer(data);
+#endif
 	SPI_WDPW21_CS_DEASSERT(CsPin);
 }
 
@@ -574,19 +609,23 @@ int wpdW21_spi::GetY(void *driverHandlerPtr) {
 bool wpdW21_spi::lcd_chkstatus_nonblocking(void) {
 	unsigned char busy;
 	WrCmd(0x71);
-	busy = digitalRead(Busy);
+#if !defined(QT_WIDGETS_LIB)
+    busy = digitalRead(Busy);
 	busy =!(busy & 0x01);
+#endif
 	return busy ? false : true;
 }
 
 void wpdW21_spi::lcd_chkstatus(void) {
-	unsigned char busy;
+#if !defined(QT_WIDGETS_LIB)
+    unsigned char busy;
 	do {
 		WrCmd(0x71);
 		busy = digitalRead(Busy);
 		busy =!(busy & 0x01);
 	} while(busy);
 	delay(2);
+#endif
 }
 
 void wpdW21_spi::upData() {
@@ -760,7 +799,10 @@ Screen *wpdW21_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 			x_end < box__.x_min ||
 				y_end < box__.y_min)
 		return (Screen *)driverHandlerPtr;
-	register int LineCnt = y;
+#if !defined(QT_WIDGETS_LIB)
+    register
+#endif
+    int LineCnt = y;
 	if(fill) {
 		if(LineCnt < box__.y_min)
 			LineCnt = box__.y_min;
@@ -776,7 +818,10 @@ Screen *wpdW21_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 		for( ; LineCnt < y_end; LineCnt++) {
 			if(LineCnt >= box__.y_max)
 				return (Screen *)driverHandlerPtr;
-			register int x = _x_start;
+#if !defined(QT_WIDGETS_LIB)
+            register
+#endif
+            int x = _x_start;
 			for( ; x < _x_end ; x++) {
 				DrvDrawPixelClip(driverHandlerPtr, &box__, x, LineCnt, color);
 			}

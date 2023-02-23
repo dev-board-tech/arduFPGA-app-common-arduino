@@ -21,8 +21,9 @@
 #ifndef __SSD1306_SPI__
 #define __SSD1306_SPI__
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
-
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include "../device/screen.h"
@@ -69,10 +70,17 @@
 #define SSD1306_ACTIVATE_SCROLL                      0x2F ///< Start scroll
 #define SSD1306_SET_VERTICAL_SCROLL_AREA             0xA3 ///< Set scroll range
 
+#if defined(QT_WIDGETS_LIB)
+typedef char SPIClass;
+#endif
+
 class ssd1306_spi : public Screen {
 public:
-	ssd1306_spi(SPIClass *spi, uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
-	ssd1306_spi(uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
+#if defined(QT_WIDGETS_LIB)
+    ssd1306_spi(SPIClass *spi);
+#endif
+    ssd1306_spi(SPIClass *spi, uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
+    ssd1306_spi(uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
 	ssd1306_spi(SPIClass *spi, int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
 	ssd1306_spi(int bufSize, uint8_t csPin, uint8_t dcPin, uint8_t rstPin);
 #ifndef SSD1306_USE_NO_BUF
@@ -107,5 +115,6 @@ public:
 
 
 };
+
 
 #endif

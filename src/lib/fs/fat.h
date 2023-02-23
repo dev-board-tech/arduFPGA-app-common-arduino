@@ -22,8 +22,8 @@ public:
 	static FRESULT stat (const TCHAR* path, FILINFO* fno);								/* Get file status */
 	static FRESULT chmod (const TCHAR* path, BYTE attr, BYTE mask);						/* Change attribute of a file/dir */
 	static FRESULT utime (const TCHAR* path, const FILINFO* fno);						/* Change timestamp of a file/dir */
-	static FRESULT chdir (const TCHAR* path);											/* Change current directory */
-	static FRESULT chdrive (const TCHAR* path);											/* Change current drive */
+    static FRESULT chdir (const TCHAR* path);											/* Change current directory */
+    static FRESULT chdrive (const TCHAR* path);											/* Change current drive */
 	static FRESULT getcwd (TCHAR* buff, UINT len);										/* Get current directory */
 	static FRESULT getfree (const TCHAR* path, DWORD* nclst, FATFS** fatfs);			/* Get number of free clusters on the drive */
 	static FRESULT getlabel (const TCHAR* path, TCHAR* label, DWORD* vsn);				/* Get volume label */

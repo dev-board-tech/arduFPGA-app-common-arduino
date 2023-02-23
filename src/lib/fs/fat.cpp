@@ -65,6 +65,7 @@ FRESULT fatfs::stat 	/* Get file status */
 	return f_stat(path, fno);
 }
 
+#if _USE_CHMOD && !_FS_READONLY
 FRESULT fatfs::chmod 	/* Change attribute of a file/dir */
 (
 	const TCHAR* path, 	/* Pointer to the file path */
@@ -83,7 +84,9 @@ FRESULT fatfs::utime	/* Change timestamp of a file/dir */
 {
 	return f_utime(path, fno);
 }
+#endif	/* _USE_CHMOD && !_FS_READONLY */
 
+#if _FS_RPATH >= 1
 FRESULT fatfs::chdir	/* Change current directory */
 (
 	const TCHAR* path	/* Pointer to the directory path */
@@ -92,6 +95,7 @@ FRESULT fatfs::chdir	/* Change current directory */
 	return f_chdir(path);
 }
 
+#if _VOLUMES >= 2
 FRESULT fatfs::chdrive	/* Change current drive */
 (
 	const TCHAR* path	/* Drive number */
@@ -99,6 +103,8 @@ FRESULT fatfs::chdrive	/* Change current drive */
 {
 	return f_chdrive(path);
 }
+#endif
+#endif
 
 FRESULT fatfs::getcwd	/* Get current directory */
 (
@@ -119,6 +125,7 @@ FRESULT fatfs::getfree	/* Get number of free clusters on the drive */
 	return f_getfree(path, nclst, fatfs);
 }
 
+#if _USE_LABEL
 FRESULT fatfs::getlabel	/* Get volume label */
 (
 	const TCHAR* path,	/* Path name of the logical drive number */
@@ -129,6 +136,7 @@ FRESULT fatfs::getlabel	/* Get volume label */
 	return f_getlabel(path, label, vsn);
 }
 
+#if !_FS_READONLY
 FRESULT fatfs::setlabel	/* Set volume label */
 (
 	const TCHAR* label	/* Pointer to the volume label to set */
@@ -136,7 +144,10 @@ FRESULT fatfs::setlabel	/* Set volume label */
 {
 	return f_setlabel(label);
 }
+#endif /* !_FS_READONLY */
+#endif /* _USE_LABEL */
 
+#if _USE_MKFS && !_FS_READONLY
 FRESULT fatfs::mkfs		/* Create a FAT volume */
 (
 	const TCHAR* path,	/* Logical drive number */
@@ -149,6 +160,7 @@ FRESULT fatfs::mkfs		/* Create a FAT volume */
 	return f_mkfs(path, opt, au, work, len);
 }
 
+#if _MULTI_PARTITION
 FRESULT fatfs::fdisk	/* Divide a physical drive into some partitions */
 (
 	BYTE pdrv,			/* Physical drive number */
@@ -158,6 +170,8 @@ FRESULT fatfs::fdisk	/* Divide a physical drive into some partitions */
 {
 	return f_fdisk(pdrv, szt, work);
 }
+#endif /* _MULTI_PARTITION */
+#endif /* _USE_MKFS && !_FS_READONLY */
 /*#####################################################*/
 FRESULT file::fopen		/* Open or create a file */
 (
@@ -235,6 +249,7 @@ FRESULT file::fsync ()		/* Flush cached data of the writing file */
 	return f_sync(&fil);
 }
 
+#if _USE_FORWARD
 FRESULT file::fforward		/* Forward data to the stream */
 (
 	UINT(*func)(const BYTE*,UINT),/* Pointer to the streaming function */
@@ -244,7 +259,9 @@ FRESULT file::fforward		/* Forward data to the stream */
 {
 	return f_forward(&fil, func, btf, bf);
 }
+#endif /* _USE_FORWARD */
 
+#if _USE_EXPAND && !_FS_READONLY
 FRESULT file::fexpand		/* Allocate a contiguous block to the file */
 (
 	FSIZE_t szf,			/* File size to be expanded to */
@@ -253,6 +270,7 @@ FRESULT file::fexpand		/* Allocate a contiguous block to the file */
 {
 	return f_expand(&fil, szf, opt);
 }
+#endif /* _USE_EXPAND && !_FS_READONLY */
 /*#####################################################*/
 FRESULT dir::fopendir		/* Open a directory */
 (
@@ -275,6 +293,7 @@ FRESULT dir::freaddir		/* Read a directory item */
 	return f_readdir(&dr, fno);
 }
 
+#if _USE_FIND
 FRESULT dir::ffindfirst		/* Find first file */
 (
 	filinfo* fno,			/* Pointer to the file information structure */
@@ -292,4 +311,5 @@ FRESULT dir::ffindnext		/* Find next file */
 {
 	return f_findnext(&dr, fno);
 }
+#endif	/* _USE_FIND */
 

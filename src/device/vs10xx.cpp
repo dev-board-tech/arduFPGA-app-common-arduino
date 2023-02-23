@@ -8,40 +8,60 @@
 #include "vs10xx.h"
 
 #include <stdint.h>
+#if defined(QT_WIDGETS_LIB)
+#define LOW         0
+#define HIGH        1
+#endif
 
 void vs10xx::assertRst() {
-	digitalWrite(RstPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(RstPin, LOW);
+#endif
 }
 
 void vs10xx::deassertRst() {
-	digitalWrite(RstPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(RstPin, HIGH);
+#endif
 }
 
 void vs10xx::assertDcs() {
-	digitalWrite(DcsPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcsPin, LOW);
+#endif
 }
 
 void vs10xx::deassertDcs() {
-	digitalWrite(DcsPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcsPin, HIGH);
+#endif
 }
 
 void vs10xx::assertCs() {
-	digitalWrite(CsPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(CsPin, LOW);
+#endif
 }
 
 void vs10xx::deassertCs() {
-	digitalWrite(CsPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(CsPin, HIGH);
+#endif
 }
 
 void vs10xx::checkBusy() {
-	while(~digitalRead(DreqPin));
+#if !defined(QT_WIDGETS_LIB)
+    while(~digitalRead(DreqPin));
+#endif
 }
 
 bool vs10xx::checkBusySkip() {
-	if(~digitalRead(DreqPin))
+#if !defined(QT_WIDGETS_LIB)
+    if(~digitalRead(DreqPin))
 		return true;
 	else
-		return false;
+#endif
+        return false;
 }
 
 vs10xx::vs10xx(uint8_t csPin, uint8_t dcsPin, uint8_t rstPin, uint8_t dreqPin) {
@@ -49,8 +69,9 @@ vs10xx::vs10xx(uint8_t csPin, uint8_t dcsPin, uint8_t rstPin, uint8_t dreqPin) {
 	DcsPin = dcsPin;
 	RstPin = rstPin;
 	DreqPin = dreqPin;
-	spi = &SPI;
-	digitalWrite(CsPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    spi = &SPI;
+    digitalWrite(CsPin, HIGH);
 	digitalWrite(DcsPin, HIGH);
 	digitalWrite(RstPin, HIGH);
 	digitalWrite(DreqPin, HIGH);
@@ -58,6 +79,7 @@ vs10xx::vs10xx(uint8_t csPin, uint8_t dcsPin, uint8_t rstPin, uint8_t dreqPin) {
 	pinMode(DcsPin, OUTPUT);
 	pinMode(RstPin, OUTPUT);
 	pinMode(DreqPin, INPUT);
+#endif
 	hardReset();
 }
 
@@ -67,7 +89,9 @@ vs10xx::~vs10xx() {
 
 void vs10xx::transfer(uint8_t *buf, int len) {
 	for( int i = 0; i < len; i++) {
-		spi->transfer(buf[i]);
+#if !defined(QT_WIDGETS_LIB)
+        spi->transfer(buf[i]);
+#endif
 	}
 }
 
@@ -89,15 +113,20 @@ uint16_t vs10xx::regRead(unsigned char reg) {
 	uint16_t value;
 	checkBusy();
 	assertCs();
-	spi->transfer(VS_INS_READ);
+#if !defined(QT_WIDGETS_LIB)
+    spi->transfer(VS_INS_READ);
 	spi->transfer(reg);
 	value = (spi->transfer(0xFF) << 8) | spi->transfer(0xFF);
 	deassertCs();
 	return value;
+#else
+    return 0;
+#endif
 }
 #define VS1011
 void vs10xx::softReset() {
-	spi->setClockDivider(3);
+#if !defined(QT_WIDGETS_LIB)
+    spi->setClockDivider(3);
 #ifdef VS10XX_CRISTAL_FREQ
 	vs10xx_set_pll(spi, VS10XX_CRISTAL_FREQ);
 #else
@@ -112,10 +141,12 @@ void vs10xx::softReset() {
 	// The next clocksetting allows SPI clocking at 5 MHz, 4 MHz is safe then.
 	//vs10xx_reg_write(spi, VS_SCI_CLOCKF, 6 << 12); // Normal clock settings multiplyer 3.0 = 12.2 MHz
 	delay(2);
+#endif
 }
 
 void vs10xx::hardReset() {
-	spi->setClockDivider(3);
+#if !defined(QT_WIDGETS_LIB)
+    spi->setClockDivider(3);
 	assertRst();
 	delay(1);
 	deassertRst();
@@ -131,6 +162,7 @@ void vs10xx::hardReset() {
 	regRead(VS_SCI_STATUS);
 	regWrite(VS_SCI_MODE, VS_SM_SDINEW);
 	delay(2);
+#endif
 }
 
 void vs10xx::setPll(uint32_t qFreq) {
@@ -157,8 +189,10 @@ void vs10xx::sendNull(uint16_t len) {
 	checkBusy();
 	assertDcs();
 	uint16_t nullCount;
-	for(nullCount = 0; nullCount < len; nullCount++)
+#if !defined(QT_WIDGETS_LIB)
+    for(nullCount = 0; nullCount < len; nullCount++)
 		spi->transfer(255);
+#endif
 	deassertDcs();
 }
 
@@ -172,9 +206,11 @@ bool vs10xx::send32BData(uint8_t* buffer) {
 }
 
 bool vs10xx::send1byteData(uint8_t data) {
-	if(checkBusySkip()) {
+#if !defined(QT_WIDGETS_LIB)
+    if(checkBusySkip()) {
 		spi->transfer(255);
 		return true;
 	}
+#endif
 	return false;
 }

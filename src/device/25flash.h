@@ -23,8 +23,12 @@
 #define __25FLASH_H__
 
 #include <stdint.h>
+#if !defined(QT_WIDGETS_LIB)
 #include <Arduino.h>
 #include <SPI.h>
+#else
+typedef void SPIClass;
+#endif
 
 class Flash25 {
 public:

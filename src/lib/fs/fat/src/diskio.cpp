@@ -53,12 +53,9 @@ BYTE count /* Number of sectors to read (1..255) */
 	if (!FatFs[drv]->drv_rw_func.DriveStruct
 			|| !FatFs[drv]->drv_rw_func.drv_r_func)
 		return RES_PARERR;
-	if (FatFs[drv]->drv_rw_func.drv_r_func(
+    return FatFs[drv]->drv_rw_func.drv_r_func(
 			(void*) FatFs[drv]->drv_rw_func.DriveStruct, (void*) buff, sector,
-			count))
-		return RES_OK;
-	else
-		return RES_ERROR;
+            count);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -74,12 +71,9 @@ BYTE count /* Number of sectors to write (1..255) */
 	if (!FatFs[drv]->drv_rw_func.DriveStruct
 			|| !FatFs[drv]->drv_rw_func.drv_w_func)
 		return RES_PARERR;
-	if (FatFs[drv]->drv_rw_func.drv_w_func(
+    return FatFs[drv]->drv_rw_func.drv_w_func(
 			(void*) FatFs[drv]->drv_rw_func.DriveStruct, (void*) buff, sector,
-			count))
-		return RES_OK;
-	else
-		return RES_ERROR;
+            count);
 }
 #endif /* _READONLY */
 
@@ -88,15 +82,13 @@ BYTE count /* Number of sectors to write (1..255) */
 
 DRESULT disk_ioctl(BYTE drv, /* Physical drive nmuber (0..) */
 BYTE ctrl, /* Control code */
-void *buff /* Buffer to send/receive control data */
+DWORD *buff /* Buffer to send/receive control data */
 )
 {
-	unsigned int response = FR_OK;
 	if (!FatFs[drv]->drv_rw_func.DriveStruct
 			|| !FatFs[drv]->drv_rw_func.drv_ioctl_func)
 		return RES_PARERR;
-	FatFs[drv]->drv_rw_func.drv_ioctl_func(FatFs[drv]->drv_rw_func.DriveStruct,
-			ctrl, &response);
-	return (DRESULT) response;
+    return FatFs[drv]->drv_rw_func.drv_ioctl_func(FatFs[drv]->drv_rw_func.DriveStruct,
+            ctrl, buff);
 }
 

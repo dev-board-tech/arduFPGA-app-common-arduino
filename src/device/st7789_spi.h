@@ -22,7 +22,9 @@
 #ifndef ST7789_H_
 #define ST7789_H_
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -71,6 +73,9 @@
 #define ST7789_RDID4   0xDD
 
 
+#if defined(QT_WIDGETS_LIB)
+typedef char SPIClass;
+#endif
 
 class st7789_spi : public Screen {
 public:

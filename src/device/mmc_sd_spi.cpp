@@ -22,21 +22,33 @@
 #include "../lib/fs/fat/inc/diskio.h"
 #if __AVR_MEGA__
 #include <avr/interrupt.h>
+#else
+#define F_CPU   0
+#define sei()
+#define cli()
 #endif
 
 //#######################################################################################
 inline uint8_t ioData(mmcSd_t *inst, uint8_t value) {
 	if (!inst->spiInst)
 		return 0xFF;
-	return inst->spiInst->transfer(value);
+#if !defined(QT_WIDGETS_LIB)
+    return inst->spiInst->transfer(value);
+#else
+    return 0xFF;
+#endif
 }
 //#######################################################################################
 static inline void csAssert(mmcSd_t *inst) {
-	digitalWrite(inst->csPin, 0);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(inst->csPin, 0);
+#endif
 }
 //#######################################################################################
 static inline void csDeassert(mmcSd_t *inst) {
-	digitalWrite(inst->csPin, 1);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(inst->csPin, 1);
+#endif
 }
 void spiClkChange(mmcSd_t *inst, uint32_t clock)
   //__attribute__((__always_inline__))
@@ -97,7 +109,9 @@ void spiClkChange(mmcSd_t *inst, uint32_t clock)
   clockDiv ^= 0x1;
 
   // Pack into the SPISettings class
+#if !defined(QT_WIDGETS_LIB)
   inst->spiInst->setClockDivider(clockDiv);
+#endif
 //  spcr = _BV(SPE) | _BV(MSTR) | ((bitOrder == LSBFIRST) ? _BV(DORD) : 0) |
 //    (dataMode & SPI_MODE_MASK) | ((clockDiv >> 1) & SPI_CLOCK_MASK);
 //  spsr = clockDiv & SPI_2XCLOCK_MASK;
@@ -338,7 +352,7 @@ unsigned int readPage(mmcSd_t *inst, void* _Buffer, unsigned long block, unsigne
 	return nblks ? false : true;    /* Return result */
 }
 //#######################################################################################
-unsigned int mmcSdSpiRead(void *handler, void* _Buffer, unsigned long _block, unsigned int nblks)
+DRESULT mmcSdSpiRead(void *handler, void* _Buffer, unsigned long _block, unsigned int nblks)
 {
 	cli();
 	if(!handler) {
@@ -411,12 +425,12 @@ unsigned char token          /* Token */
 }
 
 
-unsigned int writePage(mmcSd_t *inst, void* _Buffer, unsigned long block, unsigned int nblks)
+DRESULT writePage(mmcSd_t *inst, void* _Buffer, unsigned long block, unsigned int nblks)
 {
 	if (!nblks)
-		return false;       /* Check parameter */
+        return RES_ERROR;       /* Check parameter */
 	if (inst->SD_Init_OK == false)
-		return false;   /* Check if drive is ready */
+        return RES_ERROR;   /* Check if drive is ready */
 
 	if (inst->sdType == IsSd)
 		block *= 512;   /* LBA ot BA conversion (byte addressing cards) */
@@ -441,10 +455,10 @@ unsigned int writePage(mmcSd_t *inst, void* _Buffer, unsigned long block, unsign
 		}
 	}
 	deselect(inst);
-	return nblks ? false : true;    /* Return result */
+    return nblks ? RES_ERROR : RES_OK;    /* Return result */
 }
 //#######################################################################################
-unsigned int mmcSdSpiWrite(void *handler, void* _Buffer, unsigned long _block, unsigned int nblks)
+DRESULT mmcSdSpiWrite(void *handler, void* _Buffer, unsigned long _block, unsigned int nblks)
 {
 	cli();
 	if(!handler) {
@@ -477,10 +491,10 @@ unsigned int mmcSdSpiWrite(void *handler, void* _Buffer, unsigned long _block, u
 	return RES_OK;
 }
 //#######################################################################################
-void mmcSdSpiIoctl(void *handler, unsigned int  command,  unsigned int *buffer)
+DRESULT mmcSdSpiIoctl(void *handler, unsigned int  command,  DWORD *buffer)
 {
 	if(!handler)
-		return;
+        return RES_ERROR;
 	mmcSd_t *inst = (mmcSd_t *)handler;
 	switch(command) {
 		case GET_SECTOR_COUNT:
@@ -492,20 +506,24 @@ void mmcSdSpiIoctl(void *handler, unsigned int  command,  unsigned int *buffer)
 		case CTRL_SYNC :        /* Make sure that no pending write process */
 			select(inst);
 			if (!waitReady(inst, 5000))
-			return;
+                return RES_ERROR;
 		default:
 			*buffer = 0;
 			break;
 	}
-	return;
+    return RES_OK;
 }
 //#######################################################################################
 bool mmc_sd_connected(void *handler) {
 	mmcSd_t *inst = (mmcSd_t *)handler;
-	if (inst->cdPin != -1)
+#if !defined(QT_WIDGETS_LIB)
+    if (inst->cdPin != -1)
 		return digitalRead(inst->cdPin) ? false : true;
 	else
 		return true;
+#else
+    return false;
+#endif
 }
 //#######################################################################################
 bool mmcSdSpiIdle(mmcSd_t *inst) {
@@ -520,7 +538,9 @@ bool mmcSdSpiIdle(mmcSd_t *inst) {
 			uSD_LED_PORT &= ~uSD_LED_PIN;
 #endif
 			inst->initFlg = 0;
-			delay(400);
+#if !defined(QT_WIDGETS_LIB)
+            delay(400);
+#endif
 			initCard(inst);
 			if(initCard(inst)) {
 				inst->connected = true;
@@ -544,7 +564,9 @@ bool mmcSdSpiIdle(mmcSd_t *inst) {
 				if(!f_mount(inst->fatFs, drv_name_buff, 1))
 #endif
 				{
-					delay(4000);
+#if !defined(QT_WIDGETS_LIB)
+                    delay(4000);
+#endif
 #if (_FFCONF == 82786)
 					drv_name_buff[0] = '0' + inst->unitNr;
 					drv_name_buff[1] = ':';

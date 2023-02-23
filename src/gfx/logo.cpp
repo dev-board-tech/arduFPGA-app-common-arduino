@@ -50,7 +50,7 @@ inline static bool getPixelFromBitmap(logo_t *logoInst, int16_t x ,int16_t y) {
 #if __AVR_MEGA__
 	if(pgm_read_byte(&logoInst->logo[2 + (x >> 3) + (y * (pgm_read_byte(&logoInst->logo[0]) >> 3))]) & pgm_read_byte(&MASK_TABLE[(7 - x) & 0x07]))
 #else
-		if(logoInst->logo[2 + (x >> 3) + (y * (logoInst->logo[0] >> 3))] & MASK_TABLE[(7 - x) & 0x07])
+	if(logoInst->logo[2 + (x >> 3) + (y * (logoInst->logo[0] >> 3))] & MASK_TABLE[(7 - x) & 0x07])
 #endif
 		return !logoInst->negative;
 	else
@@ -75,40 +75,14 @@ void logo_idle(logo_t *logoInst, struct box_s *box, int16_t x_pos ,int16_t y_pos
 	for (int16_t y = 0; y < (int16_t)pgm_read_byte(&logoInst->logo[1]); y++) {
 		for (int16_t x = 0; x < (int16_t)pgm_read_byte(&logoInst->logo[0]); x++) {
 			defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
-			//DISPLAY_FUNC_DRAW_PIXEL(inst, box, buf, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
 		}
 	}
 #else
 	for (int16_t y = 0; y < (int16_t)logoInst->logo[1]; y++) {
 		for (int16_t x = 0; x < (int16_t)logoInst->logo[0]; x++) {
 			defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
-			//DISPLAY_FUNC_DRAW_PIXEL(box, buf, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
 		}
 	}
 #endif
 }
-
-/*void logo_idle(logo_t *logoInst, ioSPI_t *inst, uint8_t *buf, box_t *box, int16_t x_pos ,int16_t y_pos) {
-#if __AVR_MEGA__
-	for (int16_t y = 0; y < (int16_t)pgm_read_byte(&logoInst->logo[1]); y++) {
-		for (int16_t x = 0; x < (int16_t)pgm_read_byte(&logoInst->logo[0]); x++) {
-			DISPLAY_FUNC_DRAW_PIXEL(inst, box, buf, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
-		}
-	}
-#else
-	for (int16_t y = 0; y < (int16_t)logoInst->logo[1]; y++) {
-		int16_t ypos = y + y_pos;
-		for (int16_t xx = 0; xx < (int16_t)logoInst->logo[0]; xx+=8) {
-			uint8_t byte = getByteFromBitmap(logoInst, xx, y);
-			if(logoInst->negative) {
-				byte = ~byte;
-			}
-			for (int16_t x = xx; x < xx + 8 && x < (int16_t)logoInst->logo[0]; x++) {
-				DISPLAY_FUNC_DRAW_PIXEL(inst, box, buf, x + x_pos, ypos, byte & 0x80);
-				byte = byte << 1;
-			}
-		}
-	}
-#endif
-}*/
 

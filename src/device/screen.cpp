@@ -118,21 +118,89 @@ Screen *Screen::drvDrawStringClip(struct box_s *box, char *string, int x, int y,
 }
 
 //#######################################################################################
+Screen *Screen::drvDrawRoundedRectangle(int x, int y, int x_size, int y_size, int corner_rad, bool fill, int color) {
+    return drvDrawRoundedRectangle(box, x, y, x_size, y_size, corner_rad, fill, color);
+}
+
+Screen *Screen::drvDrawRoundedRectangle(struct box_s *box, int x, int y, int x_size, int y_size, int corner_rad, bool fill, int color) {
+    unsigned int radius = corner_rad;
+    if (radius < 0) {
+        radius = ~radius;
+    }
+    int a, b, P;
+    a = 0;
+    b = radius;
+    P = 1 - radius;
+    int Tmp1, Tmp2, Tmp3, Tmp4;
+    int Tmp5, Tmp6, Tmp7, Tmp8;
+    int _Tmp1 = -1, _Tmp3 = -1, _Tmp5 = -1, _Tmp7 = -1;
+    if (fill) {
+        drvDrawRectangleClip(box, x, y + corner_rad, x_size, y_size - (corner_rad << 1), true, color);
+    } else {
+        drvDrawHLineClip(box, x + corner_rad, x + x_size - corner_rad - 1, y, 1, color);
+        drvDrawHLineClip(box, x + corner_rad, x + x_size - corner_rad - 1, y + y_size, 1, color);
+        drvDrawVLineClip(box, y + corner_rad, y + y_size - corner_rad - 1, x, 1, color);
+        drvDrawVLineClip(box, y + corner_rad, y + y_size - corner_rad - 1, x + x_size - 1, 1, color);
+    }
+    do {
+        Tmp1 = x + a;
+        Tmp2 = x - a;
+        Tmp3 = x + b;
+        Tmp4 = x - b;
+        Tmp5 = y + a;
+        Tmp6 = y - a;
+        Tmp7 = y + b;
+        Tmp8 = y - b;
+        if (fill) {
+            if (_Tmp1 != Tmp1 || _Tmp7 != Tmp7) {
+                drvDrawHLineClip(box, Tmp2 + corner_rad, Tmp1 + x_size - corner_rad - 1, Tmp7 + y_size - corner_rad, 1, color);
+                drvDrawHLineClip(box, Tmp2 + corner_rad, Tmp1 + x_size - corner_rad - 1, Tmp8 + corner_rad, 1, color);
+            }
+            if (_Tmp5 != Tmp5 || _Tmp3 != Tmp3) {
+                drvDrawHLineClip(box, Tmp4 + corner_rad, Tmp3 + x_size - corner_rad - 1, Tmp5 + y_size - corner_rad, 1, color);
+                drvDrawHLineClip(box, Tmp4 + corner_rad, Tmp3 + x_size - corner_rad - 1, Tmp6 + corner_rad, 1, color);
+            }
+            _Tmp1 = Tmp1;
+            _Tmp3 = Tmp3;
+            _Tmp5 = Tmp5;
+            _Tmp7 = Tmp7;
+        } else {
+            drvDrawPixelClip(box, Tmp1 + x_size - corner_rad - 1, Tmp7 + y_size - corner_rad, color);
+            drvDrawPixelClip(box, Tmp3 + x_size - corner_rad - 1, Tmp5 + y_size - corner_rad, color);
+            drvDrawPixelClip(box, Tmp2 + corner_rad, Tmp7 + y_size - corner_rad, color);
+            drvDrawPixelClip(box, Tmp4 + corner_rad, Tmp5 + y_size - corner_rad, color);
+            drvDrawPixelClip(box, Tmp3 + x_size - corner_rad - 1, Tmp6 + corner_rad, color);
+            drvDrawPixelClip(box, Tmp1 + x_size - corner_rad - 1, Tmp8 + corner_rad, color);
+            drvDrawPixelClip(box, Tmp2 + corner_rad, Tmp8 + corner_rad, color);
+            drvDrawPixelClip(box, Tmp4 + corner_rad, Tmp6 + corner_rad, color);
+        }
+
+        if (P < 0) {
+            P += 3 + 2 * a++;
+        } else {
+            P += 5 + 2 * (a++ - b--);
+        }
+    } while (a <= b);
+    //refresh();
+    return this;
+}
+//#######################################################################################
 
 Screen *Screen::drawCircle(signed int x, signed int y, unsigned int _radius, bool fill, unsigned int color) {
-	return drawCircle(box, x, y,_radius, fill, color);
+    return drawCircle(box, x, y, _radius, fill, color);
 }
 Screen *Screen::drawCircle(struct box_s *box, signed int x, signed int y, unsigned int _radius, bool fill, unsigned int color) {
 	unsigned int radius = _radius;
-	if (radius < 0)
-		radius = ~radius;
+    if (radius < 0) {
+        radius = ~radius;
+    }
 	int a, b, P;
-	a = 0;
-	b = radius;
-	P = 1 - radius;
+    a = 0;
+    b = radius;
+    P = 1 - radius;
 	int Tmp1, Tmp2, Tmp3, Tmp4;
 	int Tmp5, Tmp6, Tmp7, Tmp8;
-	int _Tmp5 = 5, _Tmp7 = 0;
+    int _Tmp1 = -1, _Tmp3 = -1, _Tmp5 = -1, _Tmp7 = -1;
 	do {
 		Tmp1 = x + a;
 		Tmp2 = x - a;
@@ -143,17 +211,19 @@ Screen *Screen::drawCircle(struct box_s *box, signed int x, signed int y, unsign
 		Tmp7 = y + b;
 		Tmp8 = y - b;
 		if (fill) {
-			if (_Tmp7 != Tmp7) {
-				drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp7, 1, color);
-				drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp8, 1, color);
+            if (_Tmp1 != Tmp1 || _Tmp7 != Tmp7) {
+                drvDrawHLineClip(box, Tmp2, Tmp1, Tmp7, 1, color);
+                drvDrawHLineClip(box, Tmp2, Tmp1, Tmp8, 1, color);
 			}
-			if (_Tmp5 != Tmp5) {
-				drvDrawHLineClip(box, Tmp4, Tmp3 - Tmp4, Tmp5, 1, color);
-				drvDrawHLineClip(box, Tmp4, Tmp3 - Tmp4, Tmp6, 1, color);
+            if (_Tmp5 != Tmp5 || _Tmp3 != Tmp3) {
+                drvDrawHLineClip(box, Tmp4, Tmp3, Tmp5, 1, color);
+                drvDrawHLineClip(box, Tmp4, Tmp3, Tmp6, 1, color);
 			}
-			_Tmp5 = Tmp5;
-			_Tmp7 = Tmp7;
-		} else {
+            _Tmp1 = Tmp1;
+            _Tmp3 = Tmp3;
+            _Tmp5 = Tmp5;
+            _Tmp7 = Tmp7;
+        } else {
 			drvDrawPixelClip(box, Tmp1, Tmp7, color);
 			drvDrawPixelClip(box, Tmp3, Tmp5, color);
 			drvDrawPixelClip(box, Tmp2, Tmp7, color);
@@ -164,11 +234,12 @@ Screen *Screen::drawCircle(struct box_s *box, signed int x, signed int y, unsign
 			drvDrawPixelClip(box, Tmp4, Tmp6, color);
 		}
 
-		if (P < 0)
+        if (P < 0) {
 			P += 3 + 2 * a++;
-		else
+        } else {
 			P += 5 + 2 * (a++ - b--);
-	} while (a <= b);
+        }
+    } while (a <= b);
 	//refresh();
 	return this;
 }
@@ -325,8 +396,8 @@ void Screen::elipseplot(struct box_s *box, int xc, int yc,
 	int Tmp3 = yc + y;
 	int Tmp4 = yc - y;
 	if (fill) {
-		drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp3, 1, color);
-		drvDrawHLineClip(box, Tmp2, Tmp1 - Tmp2, Tmp4, 1, color);
+        drvDrawHLineClip(box, Tmp2, Tmp1, Tmp3, 1, color);
+        drvDrawHLineClip(box, Tmp2, Tmp1, Tmp4, 1, color);
 	} else {
 		drvDrawPixelClip(box, (unsigned int) (Tmp1), (unsigned int) (Tmp3), color);
 		drvDrawPixelClip(box, (unsigned int) (Tmp2), (unsigned int) (Tmp3), color);
@@ -342,19 +413,19 @@ Screen *Screen::drawElipse(int x, int y,unsigned int rx,unsigned int ry, bool fi
 Screen *Screen::drawElipse(struct box_s *box, int x, int y, unsigned int rx, unsigned int ry, bool fill, int color) {
 	unsigned int _rx = rx;
 	if (_rx < 0)
-		_rx = 0xFFFFFFFF - _rx;
+        _rx = 0 - _rx;
 	unsigned int _ry = ry;
 	if (_ry < 0)
-		_ry = 0xFFFFFFFF - _ry;
-	int rx2 = _rx * _rx;
-	int ry2 = _ry * _ry;
-	int tory2 = 2 * ry2;
-	int torx2 = 2 * rx2;
-	int p;
-	int _x = 0;
-	int _y = _ry;
-	int py = torx2 * _y;
-	int px = 0;
+        _ry = 0 - _ry;
+    double rx2 = _rx * _rx;
+    int ry2 = _ry * _ry;
+    int tory2 = 2 * ry2;
+    int torx2 = 2 * rx2;
+    int p;
+    int _x = 0;
+    int _y = _ry;
+    int py = torx2 * _y;
+    int px = 0;
 	elipseplot(box, x, y, _x, _y, fill, color);
 	p = /*round(*/ry2 - (rx2 * _ry) + (0.25 * rx2)/*)*/;
 	while (px < py) {
@@ -369,10 +440,10 @@ Screen *Screen::drawElipse(struct box_s *box, int x, int y, unsigned int rx, uns
 		}
 		elipseplot(box, x, y, _x, _y, fill, color);
 	}
-	p = /*round(*/ry2 * (_x + 0.5) * (_x + 0.5) + rx2 * (_y - 1) * (_y - 1)
-			- rx2 * ry2/*)*/;
+    p = /*round(*/ry2 * (_x + 0.5) * (_x + 0.5) + rx2 * (_y - 1) * (_y - 1)
+            - rx2 * ry2/*)*/;
 	while (_y > 0) {
-		_y--;
+        _y--;
 		py -= torx2;
 		if (p > 0)
 			p += rx2 - py;
@@ -520,11 +591,13 @@ Screen *Screen::drawMsg(char *text_R, int x, int y) {
 void Screen::drawMsg(const char *text_P, char *text_R, int x, int y) {
 	char *buf = NULL;
 	if(text_P) {
-		buf = (char *)malloc(strlen_P(text_P) + 1);
+#if !defined(QT_WIDGETS_LIB)
+        buf = (char *)malloc(strlen_P(text_P) + 1);
 		if(!buf) {
 			return;
 		}
 		strcpy_P(buf, text_P);
+#endif
 	} else if(text_R) {
 		buf = text_R;
 	} else {
@@ -540,9 +613,9 @@ void Screen::drawMsg(const char *text_P, char *text_R, int x, int y) {
 
 // Font Definition
 #ifdef __AVR_MEGA__
-const char font4x6[97][2] PROGMEM = {
+const uint8_t font4x6[97][2] PROGMEM = {
 #else
-const char font4x6[97][2] = {
+const uint8_t font4x6[97][2] = {
 #endif
 	{ 0x00  ,  0x00 },   /*SPACE*/
 	{ 0x49  ,  0x08 },   /*'!'*/
@@ -640,7 +713,7 @@ const char font4x6[97][2] = {
 	{ 0xc9  ,  0x5a },   /*'}'*/
 	{ 0x54  ,  0x00 },   /*'~'*/
 	{ 0x56  ,  0xe2 },   /*''*/
-	{ 0xFF  ,  0xFE }    /*''*/
+    { 0xFF  ,  0xFE }    /*''*/
 };
 #define FIRST_CHAR_IDX      32
 
@@ -649,8 +722,20 @@ Screen *Screen::drawChar4x6(int x, int y,  char c, int foreColor, int inkColor) 
 }
 Screen *Screen::drawChar4x6(struct box_s *box, int x, int y,  char c, int foreColor, int inkColor) {
 	const unsigned char index = ((unsigned char)(c)) - FIRST_CHAR_IDX;
-	if (index > 97)
+    int fg = inkColor;
+    if((unsigned char)c == '\n' || (unsigned char)c == '\r') {
+        drvDrawVLineClip(box, y, y + 2, x + 2, 1, fg);
+        drvDrawHLineClip(box, x, x+2, y+3, 1, fg);
+        drvDrawPixelClip(box, x+1, y+2, fg);
+        drvDrawPixelClip(box, x+1, y+4, fg);
+        return this;
+    }
+    if (index > 97)
 		return this;
+    if((unsigned char)c == 96+33) {
+        drvDrawRectangleClip(box, x, y, 4, 6, true, inkColor);
+        return this;
+    }
 #ifdef __AVR_MEGA__
 	unsigned char data1 = pgm_read_byte(&font4x6[index][0]);
 	unsigned char data2 = pgm_read_byte(&font4x6[index][1]);
@@ -658,11 +743,10 @@ Screen *Screen::drawChar4x6(struct box_s *box, int x, int y,  char c, int foreCo
 	unsigned char data1 = font4x6[index][0];
 	unsigned char data2 = font4x6[index][1];
 #endif
-	int fg = inkColor;
-	if(foreColor != inkColor) {
+    if(foreColor != inkColor) {
 		drvDrawRectangleClip(box, x, y, 4, 6, true, foreColor);
 	}
-	if (data2 & 1)	// Descender e.g. j, g
+    if (data2 & 1)	// Descender e.g. j, g
 	{
 		y++;
 
@@ -757,6 +841,20 @@ static inline char getCharWidth4x6() {
 	return 4;
 }
 
+gfxString::gfxString() {
+    edgeTouch = 0;
+    wordWrap = false;
+    terminalMode = false;
+    foreColor = 0;
+    inkColor = -1;
+    maxLineLen = -1;
+    maxLen = -1;
+    tabSpaces = 4;
+    transparent = false;
+    //rowCnt;
+    extraSpace = 0;
+}
+
 int gfxString::getRowsInBox4x6() {
 	if(defaultScreen == NULL)
 		return 0;
@@ -783,12 +881,12 @@ int gfxString::getColsInBox4x6(struct box_s *box) {
 	return cnt;
 }
 
-gfxString *gfxString::drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState) {
+gfxString *gfxString::drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos) {
 	//if(defaultScreen == NULL)
 		//return this;
-	return drawStringWindowed4x6(defaultScreen->getBox(), string, x, y, cursorPos, cursorState);
+    return drawStringWindowed4x6(defaultScreen->getBox(), string, x, y, cursorPos, cursorState, endCursorPos);
 }
-gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState) {
+gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos) {
 	//if(defaultScreen == NULL)
 		//return this;
     struct box_s box__;
@@ -829,10 +927,12 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
 		    }
 	    }
 	    char C, c = C = *pcString;
-	    if(cursorPos == cCnt) {
-		    if((cursorState) || (cursorState && C == 0))
-		    	C = (uint8_t)(96+32);
-	    }
+        if(c != 0) {
+            if(cursorPos == cCnt || (endCursorPos != -1 && cCnt > cursorPos && cCnt <= endCursorPos)) {
+                if((cursorState) || (cursorState && C == 0))
+                    C = endCursorPos == -1 ? (uint8_t)(96+32) : (uint8_t)(96+33);
+            }
+        }
 	    if(!transparent)
 	    	defaultScreen->drawChar4x6(&box__, cX, cY, C, foreColor, inkColor);
 	    if (c == 0) {
@@ -843,26 +943,26 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
 		    case '\n':
 				if(cY > box__.y_max)
 					return this;
-				cX = x;
+                cX = x + extraSpace;
 				cY += getCharHeight4x6();
 				rowCnt++;
 				break;
 		    case 0x09:
-				cX = (getCharWidth4x6() * tabSpaces) + ((cX / (getCharWidth4x6() * tabSpaces)) * (getCharWidth4x6() * tabSpaces));
+                cX = (getCharWidth4x6() * tabSpaces) + ((cX / (getCharWidth4x6() * tabSpaces)) * (getCharWidth4x6() * tabSpaces)) + extraSpace;
 				break;
 		    default:
-				cX += getCharWidth4x6();
-				if ((cX + getCharWidth4x6() > box__.x_max)
+                cX += getCharWidth4x6() + extraSpace;
+                if ((cX + getCharWidth4x6() + extraSpace > box__.x_max)
 				&& wordWrap == true) {
 					cY += getCharHeight4x6();
-					cX = x;
+                    cX = x + extraSpace;
 				}
 				break;
 	    }
 	    cLineCnt++;
-	    if(cLineCnt > maxLineLen && maxLineLen) {
+        if(cLineCnt >= maxLineLen && maxLineLen) {
 		    cLineCnt = 0;
-		    cX = x;
+            cX = x + extraSpace;
 		    cY += getCharHeight4x6();
 		    rowCnt++;
 	    }

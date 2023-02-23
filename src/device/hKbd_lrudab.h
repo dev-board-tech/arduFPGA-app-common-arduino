@@ -31,9 +31,25 @@
 #define KBD_A_KEY	(1<<1)
 #define KBD_B_KEY	(1<<0)
 
-void kbd_init();
-void kbd_idle();
-bool kbd_changed();
-uint8_t kbd_get();
+class hKbd_lrudab {
+public:
+    hKbd_lrudab(int repeatKeyDelay = 100, int firstKeyPause = 400);
+    void loop(uint8_t stat = 0);
+    bool getChanged();
+    uint8_t get();
+    void setTimings(int repeatKeyDelay = 100, int firstKeyPause = 400) {
+        this->firstKeyPause = firstKeyPause;
+        this->repeatKeyDelay = repeatKeyDelay;
+    }
+    void setFirstKeyPause(int firstKeyPause) {
+        this->firstKeyPause = firstKeyPause;
+    };
+    void setRepeatKeyDelay(int repeatKeyDelay) {
+        this->repeatKeyDelay = repeatKeyDelay;
+    }
+private:
+    int firstKeyPause = 400;
+    int repeatKeyDelay = 100;
+};
 
 #endif /* KBD_H_ */

@@ -25,6 +25,12 @@
 
 #define DELAY 0x80
 
+#if defined(QT_WIDGETS_LIB)
+#define LOW     0
+#define HIGH    1
+#endif
+
+
 /*#if __AVR_MEGA__
 #include <avr/pgmspace.h>
 static const unsigned char ST7789_BIT_MASK_TABLE [] PROGMEM = {
@@ -73,40 +79,52 @@ cmd_240x240[]
 
 
 void st7789_spi::select() {
-	if(CsPin != -1)
+#if !defined(QT_WIDGETS_LIB)
+    if(CsPin != -1)
 		digitalWrite(CsPin, LOW);
+#endif
 }
 
 void st7789_spi::unselect() {
-	if(CsPin != -1)
+#if !defined(QT_WIDGETS_LIB)
+    if(CsPin != -1)
 		digitalWrite(CsPin, HIGH);
+#endif
 }
 
 void st7789_spi::reset() {
-	digitalWrite(RstPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(RstPin, LOW);
 	delay(5);
 	digitalWrite(RstPin, HIGH);
+#endif
 }
 
 void st7789_spi::WrCmd(uint8_t cmd) {
-	digitalWrite(DcPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcPin, LOW);
 	spi->transfer(cmd);
+#endif
 }
 
 void st7789_spi::WrData(uint8_t* buff, size_t buff_size) {
-	digitalWrite(DcPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcPin, HIGH);
 	//spi_wrd_buf(inst, buff, buff, buff_size);
 	for (int cnt = 0; cnt < buff_size; cnt++) {
 		spi->transfer(*buff++);
 	}
+#endif
 }
 
 void st7789_spi::WrCmd(uint8_t* buff, size_t buff_size) {
-	digitalWrite(DcPin, LOW);
+#if !defined(QT_WIDGETS_LIB)
+    digitalWrite(DcPin, LOW);
 	//spi_wrd_buf(inst, buff, buff, buff_size);
 	for (int cnt = 0; cnt < buff_size; cnt++) {
 		spi->transfer(*buff++);
 	}
+#endif
 }
 
 void st7789_spi::executeCommandList(const uint8_t *addr) {
@@ -155,7 +173,9 @@ void st7789_spi::executeCommandList(const uint8_t *addr) {
 			if(ms == 255) {
 				ms = 500;
 			}
-			delay(ms);
+#if !defined(QT_WIDGETS_LIB)
+            delay(ms);
+#endif
 		}
 	}
 }
@@ -181,7 +201,8 @@ st7789_spi::st7789_spi (uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
 	CsPin = csPin;
 	DcPin = dcPin;
 	RstPin = rstPin;
-	spi = &SPI;
+#if !defined(QT_WIDGETS_LIB)
+    spi = &SPI;
 	if(csPin != -1) {
 		digitalWrite(csPin, HIGH);
 		pinMode(csPin, OUTPUT);
@@ -190,6 +211,7 @@ st7789_spi::st7789_spi (uint8_t csPin, uint8_t dcPin, uint8_t rstPin) {
 	digitalWrite(rstPin, HIGH);
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
+#endif
 	setDefault();
 	deriverInit();
 }
@@ -198,7 +220,8 @@ st7789_spi::st7789_spi (SPIClass *Spi, uint8_t csPin, uint8_t dcPin, uint8_t rst
 	CsPin = csPin;
 	DcPin = dcPin;
 	RstPin = rstPin;
-	spi = Spi;
+#if !defined(QT_WIDGETS_LIB)
+    spi = Spi;
 	if(csPin != -1) {
 		digitalWrite(csPin, HIGH);
 		pinMode(csPin, OUTPUT);
@@ -207,6 +230,7 @@ st7789_spi::st7789_spi (SPIClass *Spi, uint8_t csPin, uint8_t dcPin, uint8_t rst
 	digitalWrite(rstPin, HIGH);
 	pinMode(dcPin, OUTPUT);
 	pinMode(rstPin, OUTPUT);
+#endif
 	setDefault();
 	deriverInit();
 }
@@ -319,7 +343,7 @@ Screen *st7789_spi::DrvDrawPixel(void *driverHandlerPtr, int x, int y, int color
 Screen *st7789_spi::DrvDrawPixelClip(void *driverHandlerPtr, struct box_s *box, int x, int y, int color) {
 	st7789_spi *drv = (st7789_spi *)driverHandlerPtr;
 	/* Check if outside the display */
-	if(x < 0 || y < 0 || y > GetY(driverHandlerPtr) - 1)
+    if(x < 0 || x > GetX(driverHandlerPtr) - 1 || y < 0 || y > GetY(driverHandlerPtr) - 1)
 		return (Screen *)driverHandlerPtr;
 	/* Check if outside the window */
 	if(box) {
@@ -332,6 +356,7 @@ Screen *st7789_spi::DrvDrawPixelClip(void *driverHandlerPtr, struct box_s *box, 
 	drv->select();
 
     drv->setAddressWindow(x, y, x+1, y+1);
+#if !defined(QT_WIDGETS_LIB)
 #ifdef ST7789_BW_MODE
 	uint8_t data[2];
 	if(color) {
@@ -345,6 +370,7 @@ Screen *st7789_spi::DrvDrawPixelClip(void *driverHandlerPtr, struct box_s *box, 
     uint8_t data[] = { color >> 8, color };
 #endif
     drv->WrData(data, sizeof(data));
+#endif
     drv->unselect();
 	return (Screen *)driverHandlerPtr;
 }
@@ -370,12 +396,13 @@ Screen *st7789_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 	}
 	int16_t x_end = x + x_size ,y_end = y + y_size;
 	if(x >= box__.x_max ||
-	y >= box__.y_max ||
-	x_end < box__.x_min ||
-	y_end < box__.y_min)
+		y >= box__.y_max ||
+			x_end < box__.x_min ||
+				y_end < box__.y_min)
 		return (Screen *)driverHandlerPtr;
-	register int16_t LineCnt = y;
+    int16_t LineCnt = y;
 
+#if !defined(QT_WIDGETS_LIB)
 #ifdef ST7789_BW_MODE
 	uint8_t data[2];
 	if(color) {
@@ -387,6 +414,7 @@ Screen *st7789_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 	}
 #else
 	uint8_t data[] = { color >> 8, color };
+#endif
 #endif
 
 	if(fill) {
@@ -406,11 +434,13 @@ Screen *st7789_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 		drv->setAddressWindow(x, LineCnt, _x_end, y_end);
 
 		uint16_t pix_nr = (LineCnt - y_end) * (x - _x_end);
-		digitalWrite(drv->DcPin, HIGH);
+#if !defined(QT_WIDGETS_LIB)
+        digitalWrite(drv->DcPin, HIGH);
 		for (;pix_nr > 0; pix_nr--) {
 			drv->spi->transfer(data[0]);
 			drv->spi->transfer(data[1]);
 		}
+#endif
 		drv->unselect();
 		return (Screen *)driverHandlerPtr;
 	}
@@ -427,9 +457,9 @@ Screen *st7789_spi::DrvDrawHLine(void *driverHandlerPtr, int x1, int x2, int y, 
 }
 
 Screen *st7789_spi::DrvDrawHLineClip(void *driverHandlerPtr, struct box_s *box, int x1, int x2, int y, byte width, int color) {
-	int16_t Half_width1 = (width>>1);
-	int16_t Half_width2 = width-Half_width1;
-	DrvDrawRectangleClip(driverHandlerPtr, box, x1, y - Half_width1, x2, y + Half_width2, true, color);
+	int Half_width1 = width - (width>>1);
+	int Half_width2 = width - Half_width1;
+	DrvDrawRectangleClip(driverHandlerPtr, box, x1, y - Half_width2, x2, y + Half_width1, true, color);
 	return (Screen *)driverHandlerPtr;
 }
 
@@ -439,9 +469,9 @@ Screen *st7789_spi::DrvDrawVLine(void *driverHandlerPtr, int y1, int y2, int x, 
 }
 
 Screen *st7789_spi::DrvDrawVLineClip(void *driverHandlerPtr, struct box_s *box, int y1, int y2, int x, byte width, int color) {
-	int16_t Half_width1 = (width>>1);
-	int16_t Half_width2 = width-Half_width1;
-	DrvDrawRectangleClip(driverHandlerPtr, box, x - Half_width1, y1, x + Half_width2, y2, true, color);
+	int Half_width1 = width - (width>>1);
+	int Half_width2 = width - Half_width1;
+	DrvDrawRectangleClip(driverHandlerPtr, box, x - Half_width2, y1, x + Half_width1, y2, true, color);
 	return (Screen *)driverHandlerPtr;
 }
 

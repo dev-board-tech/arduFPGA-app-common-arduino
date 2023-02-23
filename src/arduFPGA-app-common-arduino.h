@@ -9,19 +9,28 @@
 #include "crypto/aes256.h"
 #include "crypto/ecc.h"
 #include "crypto/sha256.h"
+#if !defined(QT_WIDGETS_LIB)
 #include "device/25flash.h"
-#include "device/kbd.h"
+#endif
+#include "device/hKbd_lrudab.h"
+#if !defined(QT_WIDGETS_LIB)
 #include "device/mmc_sd_spi.h"
 #include "device/ssd1331_spi.h"
+#endif
 #include "device/screen.h"
 #include "device/ssd1306_spi.h"
+#include "device/vKbd.h"
+#include "device/vKbdLineSimple.h"
+#include "device/vKbdSimple.h"
+#if !defined(QT_WIDGETS_LIB)
 #include "device/wpdw21_spi.h"
 #include "device/st7735_spi.h"
 #include "device/st7789_spi.h"
+#endif
 #include "device/vs10xx.h"
 #include "gfx/logo.h"
 #include "include/global.h"
-#ifdef __AVR_MEGA__
+#if defined(__AVR_MEGA__) || defined(QT_WIDGETS_LIB)
 #include "lib/fs/fat.h"
 #endif
 #include "sys/sTimer.h"
@@ -34,5 +43,6 @@
 #include "web/webBrowser.h"
 #endif
 #endif
+
 
 #endif

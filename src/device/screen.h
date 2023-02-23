@@ -21,8 +21,13 @@
 #ifndef __LIBRARIES_ARDUINO_SDK_DEV_SCREEN_H__
 #define __LIBRARIES_ARDUINO_SDK_DEV_SCREEN_H__
 
+#include <stdint.h>
+#if !defined(QT_WIDGETS_LIB)
 #include <Arduino.h>
 #include <SPI.h>
+#else
+typedef uint8_t byte;
+#endif
 #include "../include/global.h"
 
 class Screen {
@@ -38,9 +43,11 @@ public:
 	Screen *drvSetContrast(byte cont);
 	Screen *drvDrawPixel(int x, int y, int color);
 	Screen *drvDrawPixelClip(struct box_s *box, int x, int y, int color);
-	Screen *drvDrawRectangle(int x, int y, int x_size, int y_size, bool fill, int color);
-	Screen *drvDrawRectangleClip(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
-	Screen *drvDrawHLine(int x1, int x2, int y, byte width, int color);
+    Screen *drvDrawRectangle(int x, int y, int x_size, int y_size, bool fill, int color);
+    Screen *drvDrawRectangleClip(struct box_s *box, int x, int y, int x_size, int y_size, bool fill, int color);
+    Screen *drvDrawRoundedRectangle(int x, int y, int x_size, int y_size, int corner_rad, bool fill, int color);
+    Screen *drvDrawRoundedRectangle(struct box_s *box, int x, int y, int x_size, int y_size, int corner_rad, bool fill, int color);
+    Screen *drvDrawHLine(int x1, int x2, int y, byte width, int color);
 	Screen *drvDrawHLineClip(struct box_s *box, int x1, int x2, int y, byte width, int color);
 	Screen *drvDrawVLine(int y1, int y2, int x, byte width, int color);
 	Screen *drvDrawVLineClip(struct box_s *box, int y1, int y2, int x, byte width, int color);
@@ -101,7 +108,9 @@ public:
 	bool wordWrap;
 	bool reverseColor;
 	box_s *box;
-	SPIClass *spi;
+#if !defined(QT_WIDGETS_LIB)
+    SPIClass *spi;
+#endif
 	screenOrientation ScreenOrientation;
 #ifndef SSD1306_USE_NO_BUF && WDPW21_USE_NO_BUF
 #ifdef SSD1306_BUF_SIZE_BYTES
@@ -150,12 +159,13 @@ protected:
 
 class gfxString{
 public:
+    gfxString();
 	int getRowsInBox4x6();
 	int getRowsInBox4x6(struct box_s *box);
 	int getColsInBox4x6();
 	int getColsInBox4x6(struct box_s *box);
-	gfxString *drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
-	gfxString *drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
+    gfxString *drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos = -1);
+    gfxString *drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos = -1);
 	int getRowsInBox6x8();
 	int getRowsInBox6x8(struct box_s *box);
 	int getColsInBox6x8();
@@ -191,14 +201,18 @@ public:
 		this->maxLen = len;
 		return this;
 	}
-	gfxString *setTabSpaces(unsigned char spaces) {
-		this->tabSpaces = spaces;
-		return this;
-	}
-	gfxString *setTransparent(bool transparent) {
-		this->transparent = transparent;
-		return this;
-	}
+    gfxString *setTabSpaces(unsigned char spaces) {
+        this->tabSpaces = spaces;
+        return this;
+    }
+    gfxString *setTransparent(bool transparent) {
+        this->transparent = transparent;
+        return this;
+    }
+    gfxString *setExtraSpace(unsigned char extraSpace) {
+        this->extraSpace = extraSpace;
+        return this;
+    }
 
     unsigned char getEdgeTouch() { return edgeTouch;}
     bool getWordWrap() { return wordWrap;}
@@ -229,6 +243,7 @@ private:
     unsigned char tabSpaces;
     bool transparent;
     unsigned int rowCnt;
+    unsigned char extraSpace;
 
 };
 

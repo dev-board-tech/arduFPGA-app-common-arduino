@@ -10,7 +10,10 @@
 #define VS10XX_H_
 
 #include <stdbool.h>
+#include <stdint.h>
+#if !defined(QT_WIDGETS_LIB)
 #include <SPI.h>
+#endif
 
 /*#####################################################*/
 #define VS_SCI_MODE			0x00	//RW	Mode control
@@ -501,6 +504,9 @@
 
 #define VS_INS_WRITE		0x02
 #define VS_INS_READ			0x03
+#if defined(QT_WIDGETS_LIB)
+typedef char SPIClass;
+#endif
 /*#####################################################*/
 class vs10xx {
 	vs10xx(uint8_t csPin, uint8_t dcsPin, uint8_t rstPin, uint8_t dreqPin);

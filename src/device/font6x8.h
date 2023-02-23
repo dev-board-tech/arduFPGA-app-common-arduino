@@ -8,8 +8,12 @@
 #ifndef LIBRARIES_ARDUFPGA_COMMON_DEV_SRC_DEVICE_FONT6X8_H_
 #define LIBRARIES_ARDUFPGA_COMMON_DEV_SRC_DEVICE_FONT6X8_H_
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
-
+#else
+#include <stdint.h>
+typedef uint8_t byte;
+#endif
 
 #ifdef __AVR_MEGA__
 #include <avr/pgmspace.h>

@@ -19,14 +19,17 @@
  */
 
 #include <stdbool.h>
+#include <string.h>
 #include "25flash.h"
 
 Flash25::Flash25(SPIClass *spi, uint8_t csPin) {
 	memset(this, 0, sizeof(Flash25));
 	this->spi = spi;
 	this->csPin = csPin;
-	pinMode(csPin, OUTPUT);
+#if !defined(QT_WIDGETS_LIB)
+    pinMode(csPin, OUTPUT);
     digitalWrite(csPin, 1);
+#endif
 }
 
 Flash25::~Flash25() {
@@ -34,17 +37,23 @@ Flash25::~Flash25() {
 }
 
 uint8_t Flash25::readStatus() {
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(0x05);
     uint8_t tmp = spi->transfer(0xFF);
     digitalWrite(csPin, 1);
 	return tmp;
+#else
+    return 0;
+#endif
 }
 
 void Flash25::writeEnable(bool state) {
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(state ? 0x06 : 0x04);
     digitalWrite(csPin, 1);
+#endif
 	uint8_t status;
 	do {
 		status = readStatus();
@@ -54,16 +63,19 @@ void Flash25::writeEnable(bool state) {
 
 void Flash25::writeStatus(uint8_t status) {
 	writeEnable(true);
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(0x01);
     spi->transfer(status);
     digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
+#endif
 }
 
 
 void Flash25::write(uint32_t addr, uint8_t *buff, uint16_t size) {
 	writeEnable(true);
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(0x02);
     spi->transfer(addr >> 16);
@@ -74,9 +86,11 @@ void Flash25::write(uint32_t addr, uint8_t *buff, uint16_t size) {
 	}
     digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
+#endif
 }
 
 void Flash25::read(uint32_t addr, uint8_t *buff, uint16_t size) {
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(0x0B);
     spi->transfer(addr >> 16);
@@ -88,10 +102,12 @@ void Flash25::read(uint32_t addr, uint8_t *buff, uint16_t size) {
 	}
     digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
+#endif
 }
 
 void Flash25::erase(uint32_t addr) {
 	writeEnable(true);
+#if !defined(QT_WIDGETS_LIB)
     digitalWrite(csPin, 0);
     spi->transfer(0x20);
     spi->transfer(addr >> 16);
@@ -99,6 +115,7 @@ void Flash25::erase(uint32_t addr) {
     spi->transfer(addr);
     digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
+#endif
 }
 
 

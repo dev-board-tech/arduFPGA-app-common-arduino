@@ -1,23 +1,25 @@
 #ifndef __TIMER__
 #define __TIMER__
 
+#if !defined(QT_WIDGETS_LIB)
 #include "Arduino.h"
-
-#include "stdbool.h"
+#endif
+#include <stdbool.h>
+#include <stdint.h>
 
 class sTimer {
 public:
 	sTimer();
-	sTimer(long interval);
+    sTimer(uint64_t interval);
 	~sTimer();
-	void SetInterval(long interval);
-	void Start(long interval);
+    void SetInterval(uint64_t interval);
+    void Start(uint64_t interval);
 	void Start();
 	void Stop();
 	bool Tick();
 private:
-	long interval;
-	long prevTime;
+    uint64_t interval;
+    uint64_t prevTime;
 	bool enabled;
 };
 

@@ -24,7 +24,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#if !defined(QT_WIDGETS_LIB)
 #include <SPI.h>
+#endif
 #include "../lib/fs/fat/inc/ff.h"
 
 
@@ -404,7 +406,9 @@
 #define SD_CMD6_GRP1_SEL      0xFFFFFFF0
 #define SD_CMD6_GRP1_HS       0x1
 /*#####################################################*/
-
+#if defined(QT_WIDGETS_LIB)
+typedef void SPIClass;
+#endif
 typedef enum
 {
 	IsNoCard = 0, IsSd, IsSdhc,

@@ -18,9 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "kbd.h"
+#include "hKbd_lrudab.h"
 #include "sys/sTimer.h"
+#if !defined(QT_WIDGETS_LIB)
 #include <Arduino.h>
+#endif
 
 uint8_t state = 0;
 uint8_t last_state = 0;
@@ -29,11 +31,13 @@ sTimer kbd_d_timer;
 sTimer kbd_l_timer;
 sTimer kbd_r_timer;
 
-void kbd_init() {
-	kbd_u_timer.SetInterval(300);
-	kbd_d_timer.SetInterval(300);
-	kbd_l_timer.SetInterval(300);
-	kbd_r_timer.SetInterval(300);
+hKbd_lrudab::hKbd_lrudab(int repeatKeyDelay, int firstKeyPause) {
+    this->repeatKeyDelay = repeatKeyDelay;
+    this->firstKeyPause = firstKeyPause;
+    kbd_u_timer.SetInterval(repeatKeyDelay);
+    kbd_d_timer.SetInterval(repeatKeyDelay);
+    kbd_l_timer.SetInterval(repeatKeyDelay);
+    kbd_r_timer.SetInterval(repeatKeyDelay);
 	/* Configure the GPIO_LED pin */
 #ifdef KBD_A
 	pinMode(KBD_A, INPUT_PULLUP);
@@ -55,8 +59,9 @@ void kbd_init() {
 #endif
 }
 
-void kbd_idle() {
-	state = 0;
+void hKbd_lrudab::loop(uint8_t stat) {
+    state = stat;
+#if !defined(QT_WIDGETS_LIB)
 #ifdef KBD_L
 	if(!digitalRead(KBD_L))
 		state |= KBD_L_KEY;
@@ -81,14 +86,16 @@ void kbd_idle() {
 	if(!digitalRead(KBD_B))
 		state |= KBD_B_KEY;
 #endif
+#else
+#endif
 }
 
-bool kbd_changed() {
+bool hKbd_lrudab::getChanged() {
 	bool changed = false;
 #if 1
 	if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (state & KBD_U_KEY)) {
 		last_state |= KBD_U_KEY;
-		kbd_u_timer.Start(500);
+        kbd_u_timer.Start(firstKeyPause);
 		changed = true;
 	} else if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (~state & KBD_U_KEY)) {
 		last_state &= ~KBD_U_KEY;
@@ -96,7 +103,7 @@ bool kbd_changed() {
 	}
 	if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (state & KBD_D_KEY)) {
 		last_state |= KBD_D_KEY;
-		kbd_d_timer.Start(500);
+        kbd_d_timer.Start(firstKeyPause);
 		changed = true;
 	} else if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (~state & KBD_D_KEY)) {
 		last_state &= ~KBD_D_KEY;
@@ -104,7 +111,7 @@ bool kbd_changed() {
 	}
 	if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (state & KBD_L_KEY)) {
 		last_state |= KBD_L_KEY;
-		kbd_l_timer.Start(500);
+        kbd_l_timer.Start(firstKeyPause);
 		changed = true;
 	} else if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (~state & KBD_L_KEY)) {
 		last_state &= ~KBD_L_KEY;
@@ -112,31 +119,33 @@ bool kbd_changed() {
 	}
 	if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (state & KBD_R_KEY)) {
 		last_state |= KBD_R_KEY;
-		kbd_r_timer.Start(500);
+        kbd_r_timer.Start(firstKeyPause);
 		changed = true;
 	} else if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (~state & KBD_R_KEY)) {
 		last_state &= ~KBD_R_KEY;
 		kbd_r_timer.Stop();
 	}
 	if(kbd_u_timer.Tick()) {
-		kbd_u_timer.SetInterval(150);
+        kbd_u_timer.SetInterval(repeatKeyDelay);
 		changed = true;
 	}
 	if(kbd_d_timer.Tick()) {
-		kbd_d_timer.SetInterval(150);
+        kbd_d_timer.SetInterval(repeatKeyDelay);
 		changed = true;
 	}
 	if(kbd_l_timer.Tick()) {
-		kbd_l_timer.SetInterval(150);
+        kbd_l_timer.SetInterval(repeatKeyDelay);
 		changed = true;
 	}
 	if(kbd_r_timer.Tick()) {
-		kbd_r_timer.SetInterval(150);
+        kbd_r_timer.SetInterval(repeatKeyDelay);
 		changed = true;
 	}
 	if((last_state & (KBD_A_KEY | KBD_B_KEY)) ^ (state & (KBD_A_KEY | KBD_B_KEY))) {
 		changed = true;
-		delay(10);
+#if !defined(QT_WIDGETS_LIB)
+        delay(10);
+#endif
 	}
 	last_state = (last_state & ~(KBD_A_KEY | KBD_B_KEY)) | (state & (KBD_A_KEY | KBD_B_KEY));
 
@@ -150,6 +159,6 @@ bool kbd_changed() {
 	return changed;
 }
 
-uint8_t kbd_get() {
+uint8_t hKbd_lrudab::get() {
 	return last_state;
 }

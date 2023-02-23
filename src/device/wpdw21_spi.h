@@ -9,6 +9,9 @@
 #define LIBRARIES_ARDUINO_SDK_SRC_DRIVER_WPDW21_SPI_H_
 
 #include "../device/screen.h"
+#if defined(QT_WIDGETS_LIB)
+typedef char SPIClass;
+#endif
 
 class wpdW21_spi : public Screen {
 public:

@@ -33,9 +33,9 @@ typedef struct
 	unsigned char controlled_unit_nr;
 	void* DriveStruct;
 	bool		(*drv_connected)(void*);
-	unsigned int (*drv_r_func)(void*, void*, unsigned long, unsigned int);
-	unsigned int (*drv_w_func)(void*, void*, unsigned long, unsigned int);
-	void (*drv_ioctl_func)(void *, unsigned int, unsigned int *);
+    DRESULT 		(*drv_r_func)(void*, void*, unsigned long, unsigned int);
+    DRESULT 		(*drv_w_func)(void*, void*, unsigned long, unsigned int);
+    DRESULT 		(*drv_ioctl_func)(void *, unsigned int,  DWORD *);
 } DRV_RW_FUNC;
 /*---------------------------------------*/
 /* Prototypes for disk control functions */
@@ -47,7 +47,7 @@ DRESULT disk_read(BYTE, BYTE*, DWORD, BYTE);
 #if	_READONLY == 0
 DRESULT disk_write(BYTE, const BYTE*, DWORD, BYTE);
 #endif
-DRESULT disk_ioctl(BYTE, BYTE, void*);
+DRESULT disk_ioctl(BYTE, BYTE, DWORD *);
 
 /* Disk Status Bits (DSTATUS) */
 
