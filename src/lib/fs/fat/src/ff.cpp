@@ -17,6 +17,7 @@
 / by use of this software.
 /----------------------------------------------------------------------------*/
 
+#if !defined(ESP32)
 
 #include "../inc/ff.h"			/* FatFs configurations and declarations */
 #include "../inc/diskio.h"		/* Declarations of low level disk I/O functions */
@@ -6039,3 +6040,6 @@ int f_printf (
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC */
+	
+#endif
+	

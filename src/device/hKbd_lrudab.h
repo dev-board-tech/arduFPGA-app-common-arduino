@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "sys/sTimer.h"
 
 #define KBD_L_KEY	(1<<5)
 #define KBD_U_KEY	(1<<4)
@@ -36,7 +37,9 @@ public:
     hKbd_lrudab(int repeatKeyDelay = 100, int firstKeyPause = 400);
     void loop(uint8_t stat = 0);
     bool getChanged();
+    void getChangedPutBack(bool chg);
     uint8_t get();
+    void getPutBack(char c);
     void setTimings(int repeatKeyDelay = 100, int firstKeyPause = 400) {
         this->firstKeyPause = firstKeyPause;
         this->repeatKeyDelay = repeatKeyDelay;

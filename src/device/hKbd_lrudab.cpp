@@ -26,6 +26,8 @@
 
 uint8_t state = 0;
 uint8_t last_state = 0;
+bool changed = false;
+bool changedPutBack = false;
 sTimer kbd_u_timer;
 sTimer kbd_d_timer;
 sTimer kbd_l_timer;
@@ -64,64 +66,72 @@ void hKbd_lrudab::loop(uint8_t stat) {
 #if !defined(QT_WIDGETS_LIB)
 #ifdef KBD_L
 	if(!digitalRead(KBD_L))
-		state |= KBD_L_KEY;
+        state |= KBD_L_KEY;
 #endif
 #ifdef KBD_U
 	if(!digitalRead(KBD_U))
-		state |= KBD_U_KEY;
+        state |= KBD_U_KEY;
 #endif
 #ifdef KBD_D
 	if(!digitalRead(KBD_D))
-		state |= KBD_D_KEY;
+        state |= KBD_D_KEY;
 #endif
 #ifdef KBD_R
 	if(!digitalRead(KBD_R))
-		state |= KBD_R_KEY;
+        state |= KBD_R_KEY;
 #endif
 #ifdef KBD_A
 	if(!digitalRead(KBD_A))
-		state |= KBD_A_KEY;
+        state |= KBD_A_KEY;
 #endif
 #ifdef KBD_B
 	if(!digitalRead(KBD_B))
-		state |= KBD_B_KEY;
+        state |= KBD_B_KEY;
 #endif
 #else
 #endif
 }
 
+void hKbd_lrudab::getChangedPutBack(bool chg) {
+    changedPutBack = chg;
+}
+void hKbd_lrudab::getPutBack(char c) {
+    last_state = c;
+}
+
 bool hKbd_lrudab::getChanged() {
-	bool changed = false;
+    bool changed = changedPutBack;
+    changedPutBack = false;
 #if 1
-	if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (state & KBD_U_KEY)) {
+    if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (state & KBD_U_KEY)) {
 		last_state |= KBD_U_KEY;
         kbd_u_timer.Start(firstKeyPause);
 		changed = true;
-	} else if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (~state & KBD_U_KEY)) {
+    } else if((state & KBD_U_KEY) != (last_state & KBD_U_KEY) && (~state & KBD_U_KEY)) {
 		last_state &= ~KBD_U_KEY;
 		kbd_u_timer.Stop();
 	}
-	if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (state & KBD_D_KEY)) {
+    if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (state & KBD_D_KEY)) {
 		last_state |= KBD_D_KEY;
         kbd_d_timer.Start(firstKeyPause);
 		changed = true;
-	} else if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (~state & KBD_D_KEY)) {
+    } else if((state & KBD_D_KEY) != (last_state & KBD_D_KEY) && (~state & KBD_D_KEY)) {
 		last_state &= ~KBD_D_KEY;
 		kbd_d_timer.Stop();
 	}
-	if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (state & KBD_L_KEY)) {
+    if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (state & KBD_L_KEY)) {
 		last_state |= KBD_L_KEY;
         kbd_l_timer.Start(firstKeyPause);
 		changed = true;
-	} else if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (~state & KBD_L_KEY)) {
+    } else if((state & KBD_L_KEY) != (last_state & KBD_L_KEY) && (~state & KBD_L_KEY)) {
 		last_state &= ~KBD_L_KEY;
 		kbd_l_timer.Stop();
 	}
-	if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (state & KBD_R_KEY)) {
+    if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (state & KBD_R_KEY)) {
 		last_state |= KBD_R_KEY;
         kbd_r_timer.Start(firstKeyPause);
 		changed = true;
-	} else if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (~state & KBD_R_KEY)) {
+    } else if((state & KBD_R_KEY) != (last_state & KBD_R_KEY) && (~state & KBD_R_KEY)) {
 		last_state &= ~KBD_R_KEY;
 		kbd_r_timer.Stop();
 	}
@@ -141,20 +151,20 @@ bool hKbd_lrudab::getChanged() {
         kbd_r_timer.SetInterval(repeatKeyDelay);
 		changed = true;
 	}
-	if((last_state & (KBD_A_KEY | KBD_B_KEY)) ^ (state & (KBD_A_KEY | KBD_B_KEY))) {
+    if((last_state & (KBD_A_KEY | KBD_B_KEY)) ^ (state & (KBD_A_KEY | KBD_B_KEY))) {
 		changed = true;
 #if !defined(QT_WIDGETS_LIB)
         delay(10);
 #endif
 	}
-	last_state = (last_state & ~(KBD_A_KEY | KBD_B_KEY)) | (state & (KBD_A_KEY | KBD_B_KEY));
+    last_state = (last_state & ~(KBD_A_KEY | KBD_B_KEY)) | (state & (KBD_A_KEY | KBD_B_KEY));
 
 #else
-	if(last_state ^ state) {
+    if(last_state ^ state) {
 		changed = true;
 		delay(10);
 	}
-	last_state = state;
+    last_state = state;
 #endif
 	return changed;
 }

@@ -5,6 +5,8 @@
 #ifndef LIB_LIB_FS_FAT_FAT_H_
 #define LIB_LIB_FS_FAT_FAT_H_
 
+#if !defined(ESP32)
+
 #include <lib/fs/fat/inc/ff.h>
 #include <lib/fs/fat/inc/integer.h>
 
@@ -67,4 +69,6 @@ public:
 #include "fat.cpp"
 #endif
 /*#####################################################*/
+#endif
+
 #endif /* LIB_LIB_FS_FAT_FAT_H_ */

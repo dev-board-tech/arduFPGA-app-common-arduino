@@ -800,7 +800,7 @@ Screen *wpdW21_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 				y_end < box__.y_min)
 		return (Screen *)driverHandlerPtr;
 #if !defined(QT_WIDGETS_LIB)
-    register
+    //register
 #endif
     int LineCnt = y;
 	if(fill) {
@@ -819,7 +819,7 @@ Screen *wpdW21_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *b
 			if(LineCnt >= box__.y_max)
 				return (Screen *)driverHandlerPtr;
 #if !defined(QT_WIDGETS_LIB)
-            register
+            //register
 #endif
             int x = _x_start;
 			for( ; x < _x_end ; x++) {

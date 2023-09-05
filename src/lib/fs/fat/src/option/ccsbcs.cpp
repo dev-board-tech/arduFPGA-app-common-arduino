@@ -1,3 +1,4 @@
+#if !defined(ESP32)
 /*------------------------------------------------------------------------*/
 /* Unicode - Local code bidirectional converter  (C)ChaN, 2009            */
 /* (SBCS code pages)                                                      */
@@ -545,3 +546,4 @@ WCHAR chr /* Unicode character to be upper converted (BMP only) */
 	return chr;
 }
 
+#endif

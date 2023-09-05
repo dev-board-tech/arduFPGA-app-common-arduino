@@ -461,7 +461,7 @@ Screen *ssd1306_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *
 				y_end < box__.y_min)
 		return (Screen *)driverHandlerPtr;
 #if !defined(QT_WIDGETS_LIB)
-    register
+//    register
 #endif
     int LineCnt = y;
 	if(fill) {
@@ -481,7 +481,7 @@ Screen *ssd1306_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *
 			if(LineCnt >= box__.y_max)
 				return (Screen *)driverHandlerPtr;
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
             int x = _x_start;
             for( ; x < _x_end ; x++) {
@@ -492,7 +492,7 @@ Screen *ssd1306_spi::DrvDrawRectangleClip(void *driverHandlerPtr, struct box_s *
 		for( ; LineCnt < y_end; LineCnt+=8) {
 			if(LineCnt >= box__.y_max)
 				return (Screen *)driverHandlerPtr;
-			register int x = _x_start;
+			/*register*/ int x = _x_start;
 			for( ; x < _x_end ; x++) {
 				WrCmd(0x21);
 				WrCmd(x);

@@ -1,7 +1,8 @@
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266)// || defined(ESP32)
 
 #include "webBrowser.h"
 
+#include "Arduino.h"
 #include <time.h>
 #include <FS.h>
 
@@ -13,6 +14,7 @@ static String timeToString(time_t t) {
   char str[32];
   strftime(str, sizeof str, "%Y/%m/%d %H-%M-%S", lt);
   timeStr = str;
+  return timeStr;
 }
 
 //format bytes
@@ -39,7 +41,11 @@ webBrowser::~webBrowser() {
 #if USE_HTTPS
 void webBrowser::cd(BearSSL::ESP8266WebServerSecure *server) {
 #else
+#if defined(ESP8266)
 void webBrowser::cd(ESP8266WebServer *server) {
+#else
+void webBrowser::cd(WebServer *server) {
+#endif
 #endif
   String p = path;
   if(server->arg(0)[0] == '/') {
@@ -60,7 +66,11 @@ void webBrowser::cd(ESP8266WebServer *server) {
 #if USE_HTTPS
 void webBrowser::ls(BearSSL::ESP8266WebServerSecure *server) {
 #else
+#if defined(ESP8266)
 void webBrowser::ls(ESP8266WebServer *server) {
+#else
+void webBrowser::ls(WebServer *server) {
+#endif
 #endif
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   server->send(200, "text/plain", "");
@@ -109,7 +119,11 @@ void webBrowser::ls(ESP8266WebServer *server) {
 #if USE_HTTPS
 void webBrowser::mkdir(BearSSL::ESP8266WebServerSecure *server) {
 #else
+#if defined(ESP8266)
 void webBrowser::mkdir(ESP8266WebServer *server) {
+#else
+void webBrowser::mkdir(WebServer *server) {
+#endif
 #endif
   String p = path;
   p += server->arg(0);
@@ -148,7 +162,11 @@ void webBrowser::rm(ESP8266WebServer *server) {
 #if USE_HTTPS
 void webBrowser::read(BearSSL::ESP8266WebServerSecure *server) {
 #else
+#if defined(ESP8266)
 void webBrowser::read(ESP8266WebServer *server) {
+#else
+void webBrowser::read(WebServer *server) {
+#endif
 #endif
   String p = path;
   if(server->arg(0)[0] == '/') {

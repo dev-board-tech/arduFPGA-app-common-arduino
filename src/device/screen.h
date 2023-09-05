@@ -112,7 +112,7 @@ public:
     SPIClass *spi;
 #endif
 	screenOrientation ScreenOrientation;
-#ifndef SSD1306_USE_NO_BUF && WDPW21_USE_NO_BUF
+#if !defined(SSD1306_USE_NO_BUF) && !defined(WDPW21_USE_NO_BUF)
 #ifdef SSD1306_BUF_SIZE_BYTES
 	byte buf[SSD1306_BUF_SIZE_BYTES];
 #elif WDPW21_BUF_SIZE_BYTES
@@ -164,14 +164,14 @@ public:
 	int getRowsInBox4x6(struct box_s *box);
 	int getColsInBox4x6();
 	int getColsInBox4x6(struct box_s *box);
-    gfxString *drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos = -1);
-    gfxString *drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState, int16_t endCursorPos = -1);
+    gfxString *drawStringWindowed4x6(char *string, int16_t x, int16_t y, int16_t cursorPos = -1, bool cursorState = false, int16_t endCursorPos = -1);
+    gfxString *drawStringWindowed4x6(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos = -1, bool cursorState = false, int16_t endCursorPos = -1);
 	int getRowsInBox6x8();
 	int getRowsInBox6x8(struct box_s *box);
 	int getColsInBox6x8();
 	int getColsInBox6x8(struct box_s *box);
-	gfxString *drawStringWindowed6x8(char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
-	gfxString *drawStringWindowed6x8(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos, bool cursorState);
+    gfxString *drawStringWindowed6x8(char *string, int16_t x, int16_t y, int16_t cursorPos = -1, bool cursorState = false);
+    gfxString *drawStringWindowed6x8(struct box_s *box, char *string, int16_t x, int16_t y, int16_t cursorPos = -1, bool cursorState = false);
 
 	gfxString *setEdgeTouch(unsigned char edgeTouch) {
 		this->edgeTouch = edgeTouch;
@@ -224,6 +224,7 @@ public:
     unsigned char getTabSpaces() { return tabSpaces;}
     bool getTransparent() { return transparent;}
     unsigned int getRowCnt() { return rowCnt;}
+    unsigned int getRowLenPix() { return rowLenPix; }
 
 	enum {
 	    EDGE_OUTSIDE_UP = 0x1,
@@ -243,6 +244,7 @@ private:
     unsigned char tabSpaces;
     bool transparent;
     unsigned int rowCnt;
+    int16_t rowLenPix;
     unsigned char extraSpace;
 
 };

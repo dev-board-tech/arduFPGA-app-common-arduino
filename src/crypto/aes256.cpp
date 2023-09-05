@@ -161,7 +161,7 @@ uint8_t rj_xtime(uint8_t x) {
 /* -------------------------------------------------------------------------- */
 void aes_subBytes(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i = 16;
 
@@ -171,7 +171,7 @@ void aes_subBytes(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_subBytes_inv(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i = 16;
 
@@ -181,7 +181,7 @@ void aes_subBytes_inv(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_addRoundKey(uint8_t *buf, uint8_t *key) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i = 16;
 
@@ -191,7 +191,7 @@ void aes_addRoundKey(uint8_t *buf, uint8_t *key) {
 /* -------------------------------------------------------------------------- */
 void aes_addRoundKey_cpy(uint8_t *buf, uint8_t *key, uint8_t *cpk) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i = 16;
 
@@ -202,7 +202,7 @@ void aes_addRoundKey_cpy(uint8_t *buf, uint8_t *key, uint8_t *cpk) {
 /* -------------------------------------------------------------------------- */
 void aes_shiftRows(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i, j; /* to make it potentially parallelable :) */
 
@@ -216,7 +216,7 @@ void aes_shiftRows(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_shiftRows_inv(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i, j; /* same as above :) */
 
@@ -230,7 +230,7 @@ void aes_shiftRows_inv(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_mixColumns(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i, a, b, c, d, e;
 
@@ -246,7 +246,7 @@ void aes_mixColumns(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_mixColumns_inv(uint8_t *buf) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i, a, b, c, d, e, x, y, z;
 
@@ -264,7 +264,7 @@ void aes_mixColumns_inv(uint8_t *buf) {
 /* -------------------------------------------------------------------------- */
 void aes_expandEncKey(uint8_t *k, uint8_t *rc) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i;
 
@@ -313,7 +313,7 @@ void aes_expandDecKey(uint8_t *k, uint8_t *rc) {
 void aes256_init(aes256_context *ctx, uint8_t *k) {
     uint8_t rcon = 1;
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i;
 
@@ -324,7 +324,7 @@ void aes256_init(aes256_context *ctx, uint8_t *k) {
 /* -------------------------------------------------------------------------- */
 void aes256_done(aes256_context *ctx) {
 #if !defined(QT_WIDGETS_LIB)
-            register
+//            register
 #endif
     uint8_t i;
 
@@ -373,3 +373,53 @@ void aes256_decrypt_ecb(aes256_context *ctx, uint8_t *buf) {
     }
     aes_addRoundKey( buf, ctx->key); 
 } /* aes256_decrypt */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+#if defined(QT_WIDGETS_LIB)
+#include <QCryptographicHash>
+QByteArray aes::aesEncrypt(QByteArray data, QString password) {
+    QCryptographicHash sha256 (QCryptographicHash::Sha256);
+    sha256.reset();
+    sha256.addData(password.toUtf8());
+    QByteArray hash1 = sha256 .result();
+    aes256_context ctxt;
+    int destSize = ((data.length() % 16) != 0) ? ((data.length() / 16) * 16) + 16 : data.length();
+    aes256_init(&ctxt, reinterpret_cast<unsigned char*>(hash1.data()));
+    uint8_t *dataByte = (uint8_t *)calloc(1, destSize + 1);
+    if(!dataByte)
+        return nullptr;
+    memset(dataByte, 0, destSize + 1);
+    memcpy(dataByte, reinterpret_cast<unsigned char*>(data.data()), data.length());
+    for(int cnt = 0; cnt < data.length(); cnt += 16) {
+        aes256_encrypt_ecb(&ctxt, &dataByte[cnt]);
+    }
+    aes256_done(&ctxt);
+    QByteArray result(reinterpret_cast<char*>(dataByte), destSize);
+    free(dataByte);
+    return result;
+}
+
+QByteArray aes::aesDecrypt(QByteArray data, QString password) {
+    QCryptographicHash sha256 (QCryptographicHash::Sha256);
+    sha256.reset();
+    sha256.addData(password.toUtf8());
+    QByteArray hash1 = sha256 .result();
+    aes256_context ctxt;
+    aes256_init(&ctxt, reinterpret_cast<unsigned char*>(hash1.data()));
+    uint8_t *dataByte = (uint8_t *)calloc(1, data.length() + 1);
+    if(!dataByte)
+        return nullptr;
+    memset(dataByte, 0, data.length() + 1);
+    memcpy(dataByte, reinterpret_cast<unsigned char*>(data.data()), data.length());
+    for(int cnt = 0; cnt < data.length(); cnt += 16) {
+        aes256_decrypt_ecb(&ctxt, &dataByte[cnt]);
+    }
+    QByteArray result(reinterpret_cast<char*>(dataByte), strlen((char*)dataByte));
+    free(dataByte);
+    return result;
+}
+#endif

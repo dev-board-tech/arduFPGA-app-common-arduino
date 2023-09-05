@@ -22,12 +22,17 @@
 #ifndef MMC_SD_SPI_H_
 #define MMC_SD_SPI_H_
 
+#if !defined(ESP32)
+
 #include <stdint.h>
 #include <stdbool.h>
 #if !defined(QT_WIDGETS_LIB)
 #include <SPI.h>
 #endif
 #include "../lib/fs/fat/inc/ff.h"
+#if !defined(QT_WIDGETS_LIB)
+#include "Arduino.h"
+#endif
 
 
 /*
@@ -435,5 +440,7 @@ typedef struct
 }mmcSd_t;
 
 bool mmcSdSpiIdle(mmcSd_t *inst);
+
+#endif
 
 #endif /* MMC_SD_SPI_H_ */

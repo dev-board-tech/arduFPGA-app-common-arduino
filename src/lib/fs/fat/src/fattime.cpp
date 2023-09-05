@@ -1,3 +1,5 @@
+#if !defined(ESP32)
+
 #include <string.h>
 #include "../inc/integer.h"
 #include "../inc/fattime.h"
@@ -22,3 +24,4 @@ DWORD get_fattime(void) {
 			| (DWORD) (0 & 0x3F);
 }
 
+#endif

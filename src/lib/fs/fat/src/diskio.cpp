@@ -5,6 +5,8 @@
 /* disk I/O modules and attach it to FatFs module with common interface. */
 /*-----------------------------------------------------------------------*/
 
+#if !defined(ESP32)
+
 #include "../inc/diskio.h"
 //#include "interface/mmcsdlib/mmcsd_proto.h"
 //#include "interface/mmcsdlib/hs_mmcsdlib.h"
@@ -92,3 +94,4 @@ DWORD *buff /* Buffer to send/receive control data */
             ctrl, buff);
 }
 
+#endif

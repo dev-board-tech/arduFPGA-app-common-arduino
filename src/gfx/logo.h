@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020  Iulian Gheorghiu (morgoth@mail.devboard.tech)
+ * Copyright (C) 2020  Iulian Gheorghiu (morgoth@devboard.tech)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,12 +25,25 @@
 
 #include "include/global.h"
 
-typedef struct {
-	uint8_t *logo;
-	bool negative;
-}logo_t;
+class logoBW {
+    uint8_t *logo;
+    bool negative;
+    bool transparent;
+    bool transparentColor;
 
-void logo_init(logo_t *logoInst, const unsigned char *logo, bool negative);
-void logo_idle(logo_t *logoInst, struct box_s *box, int16_t x_pos ,int16_t y_pos);
+    bool getPixelFromBitmap(int16_t x ,int16_t y);
+    uint8_t getByteFromBitmap(int16_t x ,int16_t y);
+public:
+    logoBW(const unsigned char *logo, bool negative = false, bool transparent = false, bool transparentColor = false);
+    logoBW *paint(struct box_s *box, int16_t x_pos ,int16_t y_pos);
+    logoBW *setLogo(uint8_t *logo) { this->logo = logo; return this; }
+    uint8_t *getLogo() { return logo; }
+    logoBW *setNegative(bool negative) { this->negative = negative;  return this; }
+    bool getNegative() { return negative; }
+    logoBW *setTransparent(bool transparent) { this->transparent = transparent;  return this; }
+    bool getTransparent() { return transparent; }
+    logoBW *setTransparentColor(bool transparentColor) { this->transparentColor = transparentColor;  return this; }
+    bool getTransparentColor() { return transparentColor; }
+};
 
 #endif /* LOGO_H_ */

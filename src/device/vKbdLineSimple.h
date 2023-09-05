@@ -21,7 +21,7 @@ public:
     }
     static void reset(void *driverHandlerPtr) {
         vKbdLineSimple *drv = (vKbdLineSimple *)driverHandlerPtr;
-        drv->cursorState = false; drv->bigLetter = false;
+        drv->cursorState = false; drv->bigLetter = false; drv->cursorPosX = 0;
     }
     static uint8_t getKbdHeight(void *driverHandlerPtr) {
         vKbdLineSimple *drv = (vKbdLineSimple *)driverHandlerPtr;

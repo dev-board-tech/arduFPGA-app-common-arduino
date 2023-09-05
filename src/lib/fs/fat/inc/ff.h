@@ -17,6 +17,7 @@
 / by use of this software.
 /----------------------------------------------------------------------------*/
 
+#if !defined(ESP32)
 
 #ifndef _FATFS
 #define _FATFS	68020	/* Revision ID */
@@ -379,3 +380,6 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 #endif
 /*#####################################################*/
 #endif /* _FATFS */
+	
+	
+#endif

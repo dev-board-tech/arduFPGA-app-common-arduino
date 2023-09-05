@@ -14,6 +14,9 @@
 #if !defined(QT_WIDGETS_LIB)
 #include <SPI.h>
 #endif
+#if !defined(QT_WIDGETS_LIB)
+#include "Arduino.h"
+#endif
 
 /*#####################################################*/
 #define VS_SCI_MODE			0x00	//RW	Mode control

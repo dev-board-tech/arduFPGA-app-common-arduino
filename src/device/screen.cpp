@@ -905,12 +905,15 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
     int16_t cX = x;
     int16_t cY = y;
     int16_t cCnt = 0;
+    rowLenPix = 0;
     edgeTouch = 0;
     uint16_t cLineCnt = 0;;
     rowCnt = 0;
     do {
 	    if(cCnt == maxLen && maxLen) {
-		    return this;
+            if(cX > rowLenPix)
+                rowLenPix = cX;
+            return this;
 	    }
 	    if(cursorPos == cCnt) {
 		    if(cX < box__.x_min) {
@@ -936,13 +939,20 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
 	    if(!transparent)
 	    	defaultScreen->drawChar4x6(&box__, cX, cY, C, foreColor, inkColor);
 	    if (c == 0) {
-		    return this;
+            if(cX > rowLenPix)
+                rowLenPix = cX;
+            return this;
 	    }
 	    switch (c) {
 		    case '\r':
 		    case '\n':
-				if(cY > box__.y_max)
-					return this;
+            if(cX > rowLenPix)
+                rowLenPix = cX;
+                if(cY > box__.y_max) {
+                    if(cX > rowLenPix)
+                        rowLenPix = cX;
+                    return this;
+                }
                 cX = x + extraSpace;
 				cY += getCharHeight4x6();
 				rowCnt++;
@@ -954,7 +964,9 @@ gfxString *gfxString::drawStringWindowed4x6(struct box_s *box, char *string, int
                 cX += getCharWidth4x6() + extraSpace;
                 if ((cX + getCharWidth4x6() + extraSpace > box__.x_max)
 				&& wordWrap == true) {
-					cY += getCharHeight4x6();
+                    if(cX > rowLenPix)
+                        rowLenPix = cX;
+                    cY += getCharHeight4x6();
                     cX = x + extraSpace;
 				}
 				break;
@@ -1037,6 +1049,8 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 	bool ulVisible = true;
 	int16_t CharCnt = 0;
 	bool ulOpaque = false;
+    rowLenPix = 0;
+    unsigned int cursorCount = 0;
 #ifdef __AVR_MEGA__
 	chWidth = pgm_read_byte(&fontTable6x8[2]);
 	chHeight = pgm_read_byte(&fontTable6x8[3]);
@@ -1047,7 +1061,9 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 	do {
 		int8_t Char = *pcString;
 		if (Char == 0) {
-			return this;
+            if(Cursor_X > rowLenPix)
+                rowLenPix = Cursor_X;
+            return this;
 		}
 #ifdef __AVR_MEGA__
 		CharPtr = ((Char - pgm_read_byte(&fontTable6x8[4])) * chWidth) + pgm_read_byte(&fontTable6x8[0]);
@@ -1070,7 +1086,7 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 					Temp = fontTable6x8[Tmp + CharPtr];
 #endif
 					if (Temp == 0)
-					break;
+                        break;
 				}
 				Tmp++;
 			}
@@ -1084,46 +1100,58 @@ gfxString *gfxString::drawStringWindowed6x8(struct box_s *box, char *string, int
 				if (ulVisible) {
 					int16_t XX = 0;
 					int16_t YY = 0;
-					for (XX = 0; XX < Tmp; XX++) {
+                    if(cursorPos == cursorCount && cursorState && cursorPos != -1) {
+                        defaultScreen->drvDrawRectangleClip(&box__,
+                                                        XX + Cursor_X, YY + Cursor_Y, Tmp - 1, 7, true, inkColor);
+                    } else {
+                        for (XX = 0; XX < Tmp; XX++) {
 #ifdef __AVR_MEGA__
-						Temp = pgm_read_byte(&fontTable6x8[XX + CharPtr]);
+                            Temp = pgm_read_byte(&fontTable6x8[XX + CharPtr]);
 #else
-						Temp = fontTable6x8[XX + CharPtr];
+                            Temp = fontTable6x8[XX + CharPtr];
 #endif
-						for (YY = 0; YY < chHeight; YY++) {
-							if (Temp & 0x1) {
-								defaultScreen->drvDrawPixelClip(&box__,
-										XX + Cursor_X, YY + Cursor_Y, inkColor);
-							}
-							else {
-								if(foreColor != inkColor)
-									defaultScreen->drvDrawPixelClip(&box__,
-											XX + Cursor_X, YY + Cursor_Y, foreColor);
-							}
-							Temp = Temp >> 1;
-						}
-					}
+                            for (YY = 0; YY < chHeight; YY++) {
+                                if (Temp & 0x1) {
+                                    defaultScreen->drvDrawPixelClip(&box__,
+                                            XX + Cursor_X, YY + Cursor_Y, inkColor);
+                                }
+                                else {
+                                    if(foreColor != inkColor)
+                                        defaultScreen->drvDrawPixelClip(&box__,
+                                                XX + Cursor_X, YY + Cursor_Y, foreColor);
+                                }
+                                Temp = Temp >> 1;
+                            }
+                        }
+                    }
 				}
 			}
 		}
 		switch (Char) {
 			case '\r':
-				Cursor_X = x;
+                if(Cursor_X > rowLenPix)
+                    rowLenPix = Cursor_X;
+                Cursor_X = x;
 				pcString++;
+                cursorCount++;
 				break;
 			case '\n':
 				Cursor_Y += chHeight;
 				pcString++;
-				break;
+                cursorCount++;
+                break;
 			default:
 				Cursor_X += Tmp;
 				if ((Cursor_X + chWidth > box__.x_max)
 				&& WordWrap == true) {
-					Cursor_Y += chHeight;
+                    if(Cursor_X > rowLenPix)
+                        rowLenPix = Cursor_X;
+                    Cursor_Y += chHeight;
 					Cursor_X = x;
 				}
 				pcString++;
-		}
+                cursorCount++;
+        }
 		CharCnt++;
 	} while (1);
 }

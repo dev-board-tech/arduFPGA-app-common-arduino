@@ -5,7 +5,7 @@
 
 #include <string.h>
 #include "fat.h"
-
+#if !defined(ESP32)
 /*#####################################################*/
 fatfs::fatfs()
 {
@@ -313,3 +313,4 @@ FRESULT dir::ffindnext		/* Find next file */
 }
 #endif	/* _USE_FIND */
 
+#endif

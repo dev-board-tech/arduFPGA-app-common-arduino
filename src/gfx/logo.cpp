@@ -46,43 +46,48 @@ static const unsigned char MASK_TABLE [] = {
 };
 #endif
 
-inline static bool getPixelFromBitmap(logo_t *logoInst, int16_t x ,int16_t y) {
+inline bool logoBW::getPixelFromBitmap(int16_t x ,int16_t y) {
 #if __AVR_MEGA__
-	if(pgm_read_byte(&logoInst->logo[2 + (x >> 3) + (y * (pgm_read_byte(&logoInst->logo[0]) >> 3))]) & pgm_read_byte(&MASK_TABLE[(7 - x) & 0x07]))
+	if(pgm_read_byte(&logo[2 + (x >> 3) + (y * (pgm_read_byte(&logo[0]) >> 3))]) & pgm_read_byte(&MASK_TABLE[(7 - x) & 0x07]))
 #else
-	if(logoInst->logo[2 + (x >> 3) + (y * (logoInst->logo[0] >> 3))] & MASK_TABLE[(7 - x) & 0x07])
+    if(logo[2 + (x >> 3) + (y * (logo[0] >> 3))] & MASK_TABLE[(7 - x) & 0x07])
 #endif
-		return !logoInst->negative;
+        return !negative;
 	else
-		return logoInst->negative;
+        return negative;
 }
 
-inline static uint8_t getByteFromBitmap(logo_t *logoInst, int16_t x ,int16_t y) {
+inline uint8_t logoBW::getByteFromBitmap(int16_t x ,int16_t y) {
 #if __AVR_MEGA__
-	return pgm_read_byte(&logoInst->logo[2 + (x >> 3) + (y * (pgm_read_byte(&logoInst->logo[0]) >> 3))]);
+	return pgm_read_byte(&logo[2 + (x >> 3) + (y * (pgm_read_byte(&logo[0]) >> 3))]);
 #else
-	return logoInst->logo[2 + (x >> 3) + (y * (logoInst->logo[0] >> 3))];
+    return logo[2 + (x >> 3) + (y * (logo[0] >> 3))];
 #endif
 }
 
-void logo_init(logo_t *logoInst, const uint8_t *logo, bool negative) {
-	logoInst->logo = (uint8_t *)logo;
-	logoInst->negative = negative;
+logoBW::logoBW(const uint8_t *logo, bool negative, bool transparent, bool transparentColor) {
+    this->logo = (uint8_t *)logo;
+    this->negative = negative;
+    this->transparent = transparent;
+    this->transparentColor = transparentColor;
 }
 
-void logo_idle(logo_t *logoInst, struct box_s *box, int16_t x_pos ,int16_t y_pos) {
+logoBW *logoBW::paint(struct box_s *box, int16_t x_pos ,int16_t y_pos) {
 #if __AVR_MEGA__
-	for (int16_t y = 0; y < (int16_t)pgm_read_byte(&logoInst->logo[1]); y++) {
-		for (int16_t x = 0; x < (int16_t)pgm_read_byte(&logoInst->logo[0]); x++) {
-			defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
+	for (int16_t y = 0; y < (int16_t)pgm_read_byte(&logo[1]); y++) {
+		for (int16_t x = 0; x < (int16_t)pgm_read_byte(&logo[0]); x++) {
+			defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, getPixelFromBitmap(x, y));
 		}
 	}
 #else
-	for (int16_t y = 0; y < (int16_t)logoInst->logo[1]; y++) {
-		for (int16_t x = 0; x < (int16_t)logoInst->logo[0]; x++) {
-			defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, getPixelFromBitmap(logoInst, x, y));
+    for (int16_t y = 0; y < (int16_t)logo[1]; y++) {
+        for (int16_t x = 0; x < (int16_t)logo[0]; x++) {
+            bool pixValue = getPixelFromBitmap(x, y);
+            if(!transparent || transparentColor != pixValue )
+                defaultScreen->drvDrawPixelClip(box, x + x_pos, y + y_pos, pixValue);
 		}
 	}
 #endif
+    return this;
 }
 

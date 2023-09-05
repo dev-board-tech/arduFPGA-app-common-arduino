@@ -18,13 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#if !defined(ESP32)
 #include "mmc_sd_spi.h"
 #include "../lib/fs/fat/inc/diskio.h"
 #if __AVR_MEGA__
 #include <avr/interrupt.h>
 #else
+#endif
+#ifndef F_CPU
 #define F_CPU   0
+#endif
+#ifndef sei
 #define sei()
+#endif
+#ifndef cli
 #define cli()
 #endif
 
@@ -601,3 +608,4 @@ bool mmcSdSpiIdle(mmcSd_t *inst) {
 	return inst->fs_mounted;
 }
 //#######################################################################################
+#endif

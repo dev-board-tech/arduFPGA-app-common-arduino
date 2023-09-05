@@ -4,6 +4,8 @@
 
 #ifndef _DISKIO
 
+#if !defined(ESP32)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -89,4 +91,7 @@ DRESULT disk_ioctl(BYTE, BYTE, DWORD *);
 #ifdef HEADER_INCLUDE_C_FILES
 #include "../src/diskio.c"
 #endif
+	
+#endif
+
 #endif
