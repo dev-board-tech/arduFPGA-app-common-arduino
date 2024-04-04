@@ -1,7 +1,9 @@
 #ifndef __ARDUFPGA_COMMON_H__
 #define __ARDUFPGA_COMMON_H__
 
-#ifdef __AVR_MEGA__
+#define EXCLUDE_AVR_ASM_COMPILER	true
+
+#if defined (__AVR_MEGA__) && defined(USE_TEXT_EDITOR)
 #include "app/textEditor.h"
 #endif
 #include "buffers/ring_buff.h"

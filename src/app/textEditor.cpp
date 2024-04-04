@@ -1,4 +1,4 @@
-#ifdef __AVR_MEGA__
+#if defined (__AVR_MEGA__) && defined(USE_TEXT_EDITOR)
 
 #include <stdbool.h>
 #include <stdio.h>
