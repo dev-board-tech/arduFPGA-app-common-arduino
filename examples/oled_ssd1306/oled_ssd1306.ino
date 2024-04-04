@@ -13,6 +13,11 @@
 #define DISPLAY_DC_PIN						21
 #define DISPLAY_RST_PIN						8
 #define DISPLAY_BUSY_PIN					12
+#else
+#define DISPLAY_CS_PIN						10
+#define DISPLAY_DC_PIN						9
+#define DISPLAY_RST_PIN						8
+#define DISPLAY_BUSY_PIN					12
 #endif
 
 const int ledPin =  LED_BUILTIN;// the number of the LED pin
@@ -24,11 +29,12 @@ sTimer timer = sTimer(500);
 ssd1306_spi screen = ssd1306_spi(DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
 //st7789_spi screen = st7789_spi(-1, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
 #else
-SPIClass spiDisplay = SPIClass(2);
+SPIClass spiDisplay = SPIClass();
+//SPIClass spiDisplay = SPIClass(2);
 //wpdW21_spi screen = wpdW21_spi(&SPI_2, DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_RST_PIN, DISPLAY_BUSY_PIN);
 //ssd1306_spi screen = ssd1306_spi(&SPI_2, DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
 //st7735_spi screen = st7735_spi(&SPI_2, DISPLAY_CS_PIN, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
-st7789_spi screen = st7789_spi(&SPI_2, -1, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
+st7789_spi screen = st7789_spi(&spiDisplay, -1, DISPLAY_DC_PIN, DISPLAY_RST_PIN);
 #endif
 
 void setup() {
