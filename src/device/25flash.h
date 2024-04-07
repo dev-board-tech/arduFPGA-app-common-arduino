@@ -37,7 +37,9 @@ public:
 	void writeStatus(uint8_t status);
 	void write(uint32_t addr, uint8_t *buff, uint16_t size);
 	void read(uint32_t addr, uint8_t *buff, uint16_t size);
-	void erase(uint32_t addr);
+	void eraseSector(uint32_t addr);
+	void eraseBlock(uint32_t addr);
+	void eraseChip();
 private:
 	uint8_t readStatus();
 	void writeEnable(bool state);
