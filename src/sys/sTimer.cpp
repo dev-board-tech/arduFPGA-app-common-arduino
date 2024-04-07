@@ -69,3 +69,7 @@ bool sTimer::Tick() {
 	}
 	return false;
 }
+
+bool sTimer::Enabled() {
+	return this->enabled;
+}
