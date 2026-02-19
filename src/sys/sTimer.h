@@ -17,6 +17,7 @@ public:
 	void Start();
 	void Stop();
 	bool Tick();
+	bool Enabled();
 private:
     uint64_t interval;
     uint64_t prevTime;

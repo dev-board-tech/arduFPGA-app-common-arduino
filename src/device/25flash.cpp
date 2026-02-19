@@ -27,8 +27,8 @@ Flash25::Flash25(SPIClass *spi, uint8_t csPin) {
 	this->spi = spi;
 	this->csPin = csPin;
 #if !defined(QT_WIDGETS_LIB)
-    pinMode(csPin, OUTPUT);
-    digitalWrite(csPin, 1);
+	pinMode(csPin, OUTPUT);
+	digitalWrite(csPin, 1);
 #endif
 }
 
@@ -38,10 +38,10 @@ Flash25::~Flash25() {
 
 uint8_t Flash25::readStatus() {
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(0x05);
-    uint8_t tmp = spi->transfer(0xFF);
-    digitalWrite(csPin, 1);
+	digitalWrite(csPin, 0);
+	spi->transfer(0x05);
+	uint8_t tmp = spi->transfer(0xFF);
+	digitalWrite(csPin, 1);
 	return tmp;
 #else
     return 0;
@@ -50,9 +50,9 @@ uint8_t Flash25::readStatus() {
 
 void Flash25::writeEnable(bool state) {
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(state ? 0x06 : 0x04);
-    digitalWrite(csPin, 1);
+	digitalWrite(csPin, 0);
+	spi->transfer(state ? 0x06 : 0x04);
+	digitalWrite(csPin, 1);
 #endif
 	uint8_t status;
 	do {
@@ -64,10 +64,10 @@ void Flash25::writeEnable(bool state) {
 void Flash25::writeStatus(uint8_t status) {
 	writeEnable(true);
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(0x01);
-    spi->transfer(status);
-    digitalWrite(csPin, 1);
+	digitalWrite(csPin, 0);
+	spi->transfer(0x01);
+	spi->transfer(status);
+	digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
 #endif
 }
@@ -76,9 +76,9 @@ void Flash25::writeStatus(uint8_t status) {
 void Flash25::write(uint32_t addr, uint8_t *buff, uint16_t size) {
 	writeEnable(true);
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(0x02);
-    spi->transfer(addr >> 16);
+	digitalWrite(csPin, 0);
+	spi->transfer(0x02);
+	spi->transfer(addr >> 16);
 	spi->transfer(addr >> 8);
 	spi->transfer(addr);
 	while (size--) {
@@ -91,12 +91,12 @@ void Flash25::write(uint32_t addr, uint8_t *buff, uint16_t size) {
 
 void Flash25::read(uint32_t addr, uint8_t *buff, uint16_t size) {
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(0x0B);
-    spi->transfer(addr >> 16);
-    spi->transfer(addr >> 8);
-    spi->transfer(addr);
-    spi->transfer(0xFF);
+	digitalWrite(csPin, 0);
+	spi->transfer(0x0B);
+	spi->transfer(addr >> 16);
+	spi->transfer(addr >> 8);
+	spi->transfer(addr);
+	spi->transfer(0xFF);
 	while (size--) {
 		*buff++ = spi->transfer(0xFF);
 	}
@@ -105,15 +105,38 @@ void Flash25::read(uint32_t addr, uint8_t *buff, uint16_t size) {
 #endif
 }
 
-void Flash25::erase(uint32_t addr) {
+void Flash25::eraseSector(uint32_t addr) {
 	writeEnable(true);
 #if !defined(QT_WIDGETS_LIB)
-    digitalWrite(csPin, 0);
-    spi->transfer(0x20);
-    spi->transfer(addr >> 16);
-    spi->transfer(addr >> 8);
-    spi->transfer(addr);
-    digitalWrite(csPin, 1);
+	digitalWrite(csPin, 0);
+	spi->transfer(0x20);
+	spi->transfer(addr >> 16);
+	spi->transfer(addr >> 8);
+	spi->transfer(addr);
+	digitalWrite(csPin, 1);
+	while(readStatus() & 0x01);
+#endif
+}
+
+void Flash25::eraseBlock(uint32_t addr) {
+	writeEnable(true);
+#if !defined(QT_WIDGETS_LIB)
+	digitalWrite(csPin, 0);
+	spi->transfer(0x52);
+	spi->transfer(addr >> 16);
+	spi->transfer(addr >> 8);
+	spi->transfer(addr);
+	digitalWrite(csPin, 1);
+	while(readStatus() & 0x01);
+#endif
+}
+
+void Flash25::eraseChip() {
+	writeEnable(true);
+#if !defined(QT_WIDGETS_LIB)
+	digitalWrite(csPin, 0);
+	spi->transfer(0x60);
+	digitalWrite(csPin, 1);
 	while(readStatus() & 0x01);
 #endif
 }

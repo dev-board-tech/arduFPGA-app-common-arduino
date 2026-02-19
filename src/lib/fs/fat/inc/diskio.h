@@ -4,7 +4,7 @@
 
 #ifndef _DISKIO
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #ifdef __cplusplus
 extern "C" {

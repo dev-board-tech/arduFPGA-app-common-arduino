@@ -17,7 +17,7 @@
 / by use of this software.
 /----------------------------------------------------------------------------*/
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #include "../inc/ff.h"			/* FatFs configurations and declarations */
 #include "../inc/diskio.h"		/* Declarations of low level disk I/O functions */

@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 #include "mmc_sd_spi.h"
 #include "../lib/fs/fat/inc/diskio.h"
 #if __AVR_MEGA__

@@ -22,7 +22,7 @@
 #ifndef MMC_SD_SPI_H_
 #define MMC_SD_SPI_H_
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #include <stdint.h>
 #include <stdbool.h>

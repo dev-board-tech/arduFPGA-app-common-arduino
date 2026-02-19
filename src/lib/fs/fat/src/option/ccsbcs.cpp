@@ -1,4 +1,4 @@
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 /*------------------------------------------------------------------------*/
 /* Unicode - Local code bidirectional converter  (C)ChaN, 2009            */
 /* (SBCS code pages)                                                      */

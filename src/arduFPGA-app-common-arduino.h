@@ -8,6 +8,7 @@
 #endif
 #include "buffers/ring_buff.h"
 #include "convert/base58.h"
+#include "convert/dtostrf.h"
 #include "crypto/aes256.h"
 #include "crypto/ecc.h"
 #include "crypto/sha256.h"
