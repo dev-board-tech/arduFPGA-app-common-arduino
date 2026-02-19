@@ -5,7 +5,7 @@
 /* disk I/O modules and attach it to FatFs module with common interface. */
 /*-----------------------------------------------------------------------*/
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #include "../inc/diskio.h"
 //#include "interface/mmcsdlib/mmcsd_proto.h"

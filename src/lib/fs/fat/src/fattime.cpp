@@ -1,4 +1,4 @@
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #include <string.h>
 #include "../inc/integer.h"

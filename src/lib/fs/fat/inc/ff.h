@@ -17,7 +17,7 @@
 / by use of this software.
 /----------------------------------------------------------------------------*/
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #ifndef _FATFS
 #define _FATFS	68020	/* Revision ID */

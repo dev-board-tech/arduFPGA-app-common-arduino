@@ -5,7 +5,7 @@
 
 #include <string.h>
 #include "fat.h"
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 /*#####################################################*/
 fatfs::fatfs()
 {

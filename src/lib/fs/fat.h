@@ -5,7 +5,7 @@
 #ifndef LIB_LIB_FS_FAT_FAT_H_
 #define LIB_LIB_FS_FAT_FAT_H_
 
-#if !defined(ESP32)
+#if !defined(ESP32) && !defined(TARGET_RP2040)
 
 #include <lib/fs/fat/inc/ff.h>
 #include <lib/fs/fat/inc/integer.h>

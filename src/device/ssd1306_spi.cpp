@@ -60,12 +60,6 @@ static const unsigned char SSD1306_BIT_MASK_TABLE [] PROGMEM = {
 #endif // SSD1306_USE_BUF
 
 #if !defined(QT_WIDGETS_LIB)
-uint8_t CsPin;
-uint8_t DcPin;
-uint8_t RstPin;
-uint8_t Busy;
-SPIClass *spi;
-
 static inline void SPI_SSD1306_CS_ASSERT(uint8_t CsPin) {
 	digitalWrite(CsPin, LOW);
 }
@@ -332,7 +326,7 @@ int ssd1306_spi::GetY(void *driverHandlerPtr) {
 	return 64;
 }
 
-void transfer(ssd1306_spi *drv, int len) {
+void ssd1306_spi::transfer(ssd1306_spi *drv, int len) {
 #if !defined(QT_WIDGETS_LIB)
     for( int i = 0; i < len; i++) {
         spi->transfer(drv->buf[i]);

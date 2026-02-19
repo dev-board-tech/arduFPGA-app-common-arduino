@@ -112,6 +112,13 @@ public:
 
 	void WrCmd(byte cmd);
 	void WrData(byte data);
+private:
+	static uint8_t CsPin;
+	static uint8_t DcPin;
+	static uint8_t RstPin;
+	static uint8_t Busy;
+	static SPIClass *spi;
+	static void transfer(ssd1306_spi *drv, int len);
 
 
 };

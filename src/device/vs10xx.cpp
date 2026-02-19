@@ -125,7 +125,7 @@ uint16_t vs10xx::regRead(unsigned char reg) {
 }
 #define VS1011
 void vs10xx::softReset() {
-#if !defined(QT_WIDGETS_LIB)
+#if !defined(QT_WIDGETS_LIB) && !defined(TARGET_RP2040)
     spi->setClockDivider(3);
 #ifdef VS10XX_CRISTAL_FREQ
 	vs10xx_set_pll(spi, VS10XX_CRISTAL_FREQ);
@@ -145,7 +145,7 @@ void vs10xx::softReset() {
 }
 
 void vs10xx::hardReset() {
-#if !defined(QT_WIDGETS_LIB)
+#if !defined(QT_WIDGETS_LIB) && !defined(TARGET_RP2040)
     spi->setClockDivider(3);
 	assertRst();
 	delay(1);
